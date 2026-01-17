@@ -1,7 +1,7 @@
 # Procedural Generation Project 2
 
 This repository contains basic generation logic for a 2D, pixel art, tile set-based world. It was written in Rust,
-using Bevy engine (v0.17.2). The purpose of this project was to familiarise myself a little more with Rust and
+using Bevy engine (v0.18). The purpose of this project was to familiarise myself a little more with Rust and
 procedural generation. It's a follow-up on my first attempt to learn
 Rust, [Rusteroids](https://github.com/kimgoetzke/rusteroids),
 and my first, non-Rust procedural generation
@@ -51,6 +51,10 @@ techniques.
 
 ## How to use
 
+> [!NOTE]
+> When you start the application, the default settings will result in no land or objects being spawned at the
+> origin `cg(0, 0)`, so you'll have to move the camera in any direction to see something.
+
 - `A`/`D`/`W`/`S` to move the camera
 - Hold `Shift` to move camera faster
 -  `PageUp`/`PageDown` or use mouse wheel to zoom in/out
@@ -75,10 +79,6 @@ techniques.
   `crate::generation::object`
 - Resources used for both of the above can be found in `crate::generation::resources`
 - Structs and enums used across multiple modules sit in `crate::generation::lib`
-
-> [!NOTE]
-> When you start the application, the default settings will result in no land or objects being spawned at the
-> origin `cg(0, 0)`, so you'll have to move the camera in any direction to see something
 
 ### Using Nix Flakes, JetBrains RustRover & Direnv
 

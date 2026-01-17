@@ -24,7 +24,10 @@ impl Plugin for CameraPlugin {
       .insert_resource(ClearColor(WATER_BLUE))
       .init_resource::<TouchState>()
       .add_systems(Startup, setup_camera_system)
-      .add_systems(Update, (camera_movement_system, touch_camera_system, shift_pan_speed_system))
+      .add_systems(
+        Update,
+        (camera_movement_system, touch_camera_system, pan_cam_speed_boost_system),
+      )
       .add_systems(Update, reset_camera_message);
   }
 }
@@ -127,10 +130,17 @@ fn reset_camera_message(
 
 /// A system that increases the `PanCamera`s pan speed while the `Shift` key is held. Unlike `bevy_pancam` the new Bevy
 /// pan cam does not yet adjust speed based on zoom level, so we just set two fixed speeds here for now.
-fn shift_pan_speed_system(mut pan_cameras: Query<&mut PanCamera>, keyboard_input: Res<ButtonInput<KeyCode>>) {
-  let shift_down = keyboard_input.pressed(KeyCode::ShiftLeft) || keyboard_input.pressed(KeyCode::ShiftRight);
-  for mut pan in pan_cameras.iter_mut() {
-    pan.pan_speed = if shift_down { SHIFT_PAN_SPEED } else { DEFAULT_PAN_SPEED };
+fn pan_cam_speed_boost_system(mut pan_cameras: Query<&mut PanCamera>, keyboard_input: Res<ButtonInput<KeyCode>>) {
+  if keyboard_input.just_pressed(KeyCode::ShiftLeft) || keyboard_input.pressed(KeyCode::ShiftRight) {
+    for mut pan in pan_cameras.iter_mut() {
+      pan.pan_speed = SHIFT_PAN_SPEED;
+    }
+    return;
+  }
+  if keyboard_input.just_released(KeyCode::ShiftLeft) || keyboard_input.just_released(KeyCode::ShiftRight) {
+    for mut pan in pan_cameras.iter_mut() {
+      pan.pan_speed = DEFAULT_PAN_SPEED;
+    }
   }
 }
 
