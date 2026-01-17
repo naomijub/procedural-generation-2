@@ -42,13 +42,27 @@ techniques.
       for example, ruins can span multiple tiles and span over multiple terrain types
 - Features 32x32px sprites (or sprites that fit within a 32x32px grid) that were created by me
 - `bevy-inspector-egui` plugin to play around with the generation parameters at runtime
-- `bevy_pancam` plugin for free camera movement
 - `iyes_perf_ui` plugin for performance metrics in an overlay
 
 ## Attribution
 
 - Art work is somewhat inspired by [sanctumpixel](https://sanctumpixel.itch.io/)'s style
 - All sprites were created by myself and are available under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
+
+## How to use
+
+- `A`/`D`/`W`/`S` to move the camera
+- Hold `Shift` to move camera faster
+-  `PageUp`/`PageDown` or use mouse wheel to zoom in/out
+- `T`/`F6` to reset the camera's zoom level (and rotation) but not its position
+- `R`/`F5` to regenerate the world with the current settings
+- `Right Click` a tile to show and log its debug info
+- `F1` to toggle world inspector UI
+- `F2` to toggle settings
+- `F11` to toggle fullscreen/windowed mode
+- `Z` to toggle performance metrics overlay
+- `X` to toggle debug gizmos
+- `C` to toggle tile debug info being displayed
 
 ## How to develop
 

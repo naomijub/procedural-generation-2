@@ -4,23 +4,27 @@ use crate::messages::{ResetCameraMessage, UpdateWorldMessage};
 use crate::resources::{CurrentChunk, Settings};
 use bevy::app::{App, Plugin, Startup};
 use bevy::camera::visibility::RenderLayers;
+use bevy::camera_controller::pan_camera::{PanCamera, PanCameraPlugin};
 use bevy::input::touch::Touch;
 use bevy::post_process::bloom::Bloom;
 use bevy::prelude::*;
-use bevy_pancam::PanCam;
 
 const WORLD_LAYER: RenderLayers = RenderLayers::layer(0);
 const CAMERA_TRANSFORM_Z: f32 = 100000.;
+const DEFAULT_PAN_SPEED: f32 = 500.0;
+const SHIFT_PAN_SPEED: f32 = 2000.0;
 
+/// Plugin to set up and manage the main game camera, including panning and touch controls.
 pub struct CameraPlugin;
 
 impl Plugin for CameraPlugin {
   fn build(&self, app: &mut App) {
     app
+      .add_plugins(PanCameraPlugin)
       .insert_resource(ClearColor(WATER_BLUE))
       .init_resource::<TouchState>()
       .add_systems(Startup, setup_camera_system)
-      .add_systems(Update, (camera_movement_system, touch_camera_system))
+      .add_systems(Update, (camera_movement_system, touch_camera_system, shift_pan_speed_system))
       .add_systems(Update, reset_camera_message);
   }
 }
@@ -60,12 +64,10 @@ fn setup_camera_system(mut commands: Commands, settings: Res<Settings>) {
     WORLD_LAYER,
     Bloom::NATURAL,
     SpatialListener::new(10.),
-    PanCam {
-      grab_buttons: vec![MouseButton::Left, MouseButton::Middle],
-      speed: 600.,
-      zoom_to_cursor: false,
-      min_scale: 0.15,
-      max_scale: 10.,
+    PanCamera {
+      key_zoom_in: Some(KeyCode::PageUp),
+      key_zoom_out: Some(KeyCode::PageDown),
+      pan_speed: DEFAULT_PAN_SPEED,
       ..default()
     },
     TouchCamera {
@@ -103,19 +105,32 @@ fn camera_movement_system(
 }
 
 fn reset_camera_message(
-  mut camera: Query<(&Camera, &mut Projection, &mut Transform), With<WorldCamera>>,
+  mut camera: Query<(&Camera, &mut Projection, &mut Transform, Option<&mut PanCamera>), With<WorldCamera>>,
   mut messages: MessageReader<ResetCameraMessage>,
   settings: Res<Settings>,
 ) {
   for message in messages.read() {
-    let (_, mut projection, mut camera_transform) = camera.single_mut().expect("Failed to find camera");
+    let (_, mut projection, mut camera_transform, pan_camera) = camera.single_mut().expect("Failed to find camera");
     if message.reset_position {
       camera_transform.translation = Vec3::new(0., 0., CAMERA_TRANSFORM_Z);
     }
+    camera_transform.rotation = Quat::IDENTITY;
     if let Projection::Orthographic(ref mut orthographic_projection) = *projection {
       orthographic_projection.scale = settings.general.camera_default_zoom;
+      if let Some(mut pan_camera) = pan_camera {
+        pan_camera.zoom_factor = orthographic_projection.scale;
+      }
     }
     trace!("Camera position and zoom reset");
+  }
+}
+
+/// A system that increases the `PanCamera`s pan speed while the `Shift` key is held. Unlike `bevy_pancam` the new Bevy
+/// pan cam does not yet adjust speed based on zoom level, so we just set two fixed speeds here for now.
+fn shift_pan_speed_system(mut pan_cameras: Query<&mut PanCamera>, keyboard_input: Res<ButtonInput<KeyCode>>) {
+  let shift_down = keyboard_input.pressed(KeyCode::ShiftLeft) || keyboard_input.pressed(KeyCode::ShiftRight);
+  for mut pan in pan_cameras.iter_mut() {
+    pan.pan_speed = if shift_down { SHIFT_PAN_SPEED } else { DEFAULT_PAN_SPEED };
   }
 }
 
