@@ -20,14 +20,14 @@ impl Plugin for PathGenerationPlugin {
 }
 
 /// Determines paths using a simple path finding algorithm in the given [`ObjectGrid`] for further processing.
-pub fn place_paths_on_grid(mut object_grid: &mut ObjectGrid, settings: &Settings, metadata: &Metadata, mut rng: StdRng) {
+pub fn place_paths_on_grid(object_grid: &mut ObjectGrid, settings: &Settings, metadata: &Metadata, mut rng: StdRng) {
   let cg = object_grid.cg;
   if !settings.object.generate_paths {
     debug!("Skipped path generation for {} because it is disabled", cg);
     return;
   }
   let start_time = shared::get_time();
-  let connection_points = metadata.get_connection_points_for(&cg, &mut object_grid);
+  let connection_points = metadata.get_connection_points_for(&cg, object_grid);
   if connection_points.is_empty() {
     debug!("Skipped path generation for chunk {} because it has no connection points", cg);
     return;
@@ -63,8 +63,8 @@ pub fn place_paths_on_grid(mut object_grid: &mut ObjectGrid, settings: &Settings
   );
 
   let mut path: Vec<(Point<InternalGrid>, Direction)> = Vec::new();
-  calculate_path_and_draft_object_names(&mut object_grid, &mut rng, cg, &connection_points, &mut path);
-  finalise_object_names_along_the_path(&mut object_grid, &mut path);
+  calculate_path_and_draft_object_names(object_grid, &mut rng, cg, &connection_points, &mut path);
+  finalise_object_names_along_the_path(object_grid, &mut path);
   let path_points = path.iter().map(|(p, _)| *p).collect::<HashSet<Point<InternalGrid>>>();
   object_grid.set_generated_path(path_points);
   debug!(
@@ -92,11 +92,11 @@ fn calculate_path_and_draft_object_names(
   object_grid: &mut ObjectGrid,
   rng: &mut StdRng,
   cg: Point<ChunkGrid>,
-  connection_points: &Vec<Point<InternalGrid>>,
+  connection_points: &[Point<InternalGrid>],
   path: &mut Vec<(Point<InternalGrid>, Direction)>,
 ) {
   // Randomly select the initial start point and remove it from remaining points
-  let mut remaining_points = connection_points.clone();
+  let mut remaining_points = connection_points.to_vec();
   let start_index = rng.random_range(..remaining_points.len());
   let mut current_start = remaining_points.remove(start_index);
 
@@ -147,8 +147,8 @@ fn calculate_path_and_draft_object_names(
         object_name
       );
       let cell = object_grid
-        .get_cell_mut(&point)
-        .expect(format!("Failed to get cell at point {:?}", point).as_str());
+        .get_cell_mut(point)
+        .unwrap_or_else(|| panic!("Failed to get cell at point {:?}", point));
       cell.mark_as_collapsed(object_name);
     }
     trace!(
@@ -169,7 +169,7 @@ fn calculate_path_and_draft_object_names(
 
 /// Finds any collapsed cells that have more than two neighbours and updates their object name which is required because
 /// in the loop above we have no knowledge of any potential future path segments that may connect or overlap
-fn finalise_object_names_along_the_path(object_grid: &mut ObjectGrid, path: &mut Vec<(Point<InternalGrid>, Direction)>) {
+fn finalise_object_names_along_the_path(object_grid: &mut ObjectGrid, path: &mut [(Point<InternalGrid>, Direction)]) {
   let counts = path.iter().fold(HashMap::new(), |mut acc, (point, _)| {
     *acc.entry(point).or_insert(0) += 1;
     acc
@@ -183,14 +183,14 @@ fn finalise_object_names_along_the_path(object_grid: &mut ObjectGrid, path: &mut
         .into_iter()
         .filter_map(|(_, point)| object_grid.get_cell(&point))
         .filter(|cell| cell.is_collapsed())
-        .map(|cell| cell.ig.clone())
+        .map(|cell| cell.ig)
         .collect::<Vec<Point<InternalGrid>>>();
       neighbours.sort();
       neighbours.dedup();
 
-      (point.clone(), neighbours)
+      (*point, neighbours)
     })
-    .filter(|(_, neighbours)| neighbours.len() >= 1)
+    .filter(|(_, neighbours)| !neighbours.is_empty())
     .collect::<HashSet<_>>();
   if !cells_requiring_update.is_empty() {
     trace!(
@@ -248,7 +248,7 @@ pub fn run_algorithm(start_cell: &CellRef, target_cell: &CellRef) -> Vec<(Point<
     to_search.retain(|cell| !Arc::ptr_eq(cell, &current_cell));
 
     // If we have reached the target cell, reconstruct the path and return it
-    if Arc::ptr_eq(&current_cell, &target_cell) {
+    if Arc::ptr_eq(&current_cell, target_cell) {
       trace!(
         "✅  Arrived at target cell {:?}, now reconstructing the path",
         current_cell.try_lock().expect("Failed to lock current cell").ig
@@ -262,12 +262,10 @@ pub fn run_algorithm(start_cell: &CellRef, target_cell: &CellRef) -> Vec<(Point<
 
           (cell.ig, cell.get_connection().as_ref().cloned())
         };
-        let direction_to_next = if let Some(ref next_cell) = next_cell {
+        let direction_to_next = next_cell.as_ref().map_or(Direction::Center, |next_cell| {
           let next_cell_ig = next_cell.try_lock().expect("Failed to lock next cell").ig;
           Direction::from_points(&current_ig, &next_cell_ig)
-        } else {
-          Direction::Center
-        };
+        });
         path.push((current_ig, direction_to_next));
         cell = next_cell;
       }
@@ -302,7 +300,7 @@ pub fn run_algorithm(start_cell: &CellRef, target_cell: &CellRef) -> Vec<(Point<
         // ...then update the neighbour's G cost, and set the current cell as its connection
         n.set_g(g_cost_to_neighbour);
         n.set_connection(&current_cell);
-        let distance_cost = calculate_distance_cost(&n.get_ig(), &target_ig);
+        let distance_cost = calculate_distance_cost(n.get_ig(), &target_ig);
 
         // ...and set the neighbour's H cost to the distance to the target cell,
         // if it is not already in the cells to search
@@ -341,7 +339,7 @@ fn push_path_if_valid(cell: &CellRef, result: &mut Vec<(Point<InternalGrid>, Dir
 }
 
 fn get_cell_ig(cell: &CellRef) -> Point<InternalGrid> {
-  cell.lock().expect(CELL_LOCK_ERROR).get_ig().clone()
+  *cell.lock().expect(CELL_LOCK_ERROR).get_ig()
 }
 
 /// Calculates the costs based on the distance between two points in the internal grid, adjusting the cost based on the
@@ -353,9 +351,9 @@ fn calculate_distance_cost(a: &Point<InternalGrid>, b: &Point<InternalGrid>) -> 
   let y_diff = (a.y - b.y).abs() as f32;
 
   if x_diff > y_diff {
-    14. * y_diff + 10. * (x_diff - y_diff)
+    14.0f32.mul_add(y_diff, 10. * (x_diff - y_diff))
   } else {
-    14. * x_diff + 10. * (y_diff - x_diff)
+    14.0f32.mul_add(x_diff, 10. * (y_diff - x_diff))
   }
 }
 
@@ -398,7 +396,7 @@ fn determine_path_object_name_from_neighbours(
   // If we have two or fewer directions and the cell is an edge connection point, then we may need to add the direction
   // to the expected connection point in the neighbouring chunk
   if neighbour_directions.len() <= 2 && ig.is_touching_edge() {
-    let direction = direction_to_neighbour_chunk(&ig);
+    let direction = direction_to_neighbour_chunk(ig);
     if direction != Center {
       neighbour_directions.insert(direction);
     }
@@ -439,7 +437,7 @@ fn determine_path_object_name_from_neighbours(
   result
 }
 
-fn determine_path_object_name_from_two_directions(
+const fn determine_path_object_name_from_two_directions(
   previous_cell_direction: &Direction,
   next_cell_direction: &Direction,
 ) -> ObjectName {
@@ -459,7 +457,7 @@ fn determine_path_object_name_from_two_directions(
   }
 }
 
-fn direction_to_neighbour_chunk(ig: &Point<InternalGrid>) -> Direction {
+const fn direction_to_neighbour_chunk(ig: &Point<InternalGrid>) -> Direction {
   match ig {
     point if point.x == 0 => Direction::Left,
     point if point.x == CHUNK_SIZE - 1 => Direction::Right,

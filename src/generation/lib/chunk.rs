@@ -38,10 +38,10 @@ impl Chunk {
     let elevation_metadata = metadata
       .elevation
       .get(&coords.chunk_grid)
-      .expect(format!("Failed to get elevation metadata for {}", coords.chunk_grid).as_str());
+      .unwrap_or_else(|| panic!("Failed to get elevation metadata for {}", coords.chunk_grid));
     let data = generate_terrain_data(&tg, &coords.chunk_grid, &biome_metadata_set, elevation_metadata, settings);
     let layered_plane = LayeredPlane::new(data, settings);
-    Chunk {
+    Self {
       coords,
       center: Point::new_world(tg.x + (CHUNK_SIZE_PLUS_BUFFER / 2), tg.y + (CHUNK_SIZE_PLUS_BUFFER / 2)),
       climate: biome_metadata_set.this.climate,
@@ -61,7 +61,7 @@ fn generate_terrain_data(
 ) -> Vec<Vec<Option<DraftTile>>> {
   let start_time = shared::get_time();
 
-  let mut rng = StdRng::seed_from_u64(shared::calculate_seed(cg.clone(), settings.world.noise_seed));
+  let mut rng = StdRng::seed_from_u64(shared::calculate_seed(*cg, settings.world.noise_seed));
   let perlin: BasicMulti<Perlin> = BasicMulti::new(settings.world.noise_seed)
     .set_octaves(settings.world.noise_octaves)
     .set_frequency(settings.world.noise_frequency)
@@ -74,9 +74,9 @@ fn generate_terrain_data(
   let max_distance = (CHUNK_SIZE_PLUS_BUFFER as f64) / 2.;
   let mut tiles = vec![vec![None; CHUNK_SIZE_PLUS_BUFFER as usize]; CHUNK_SIZE_PLUS_BUFFER as usize];
   let mut ix = 0;
-  let mut iy = 0;
 
-  for ty in (end.y..=start.y).rev() {
+  for (iy, ty) in (end.y..=start.y).rev().enumerate() {
+    let iy = iy as i32;
     for tx in start.x..=end.x {
       let tg = Point::new_tile_grid(tx, ty); // Final tile grid coordinates
       let ig = Point::new_internal_grid(ix, iy); // Adjusted later when converting to tile
@@ -115,7 +115,6 @@ fn generate_terrain_data(
       tiles[ix as usize][iy as usize] = Some(tile);
       ix += 1;
     }
-    iy += 1;
     ix = 0;
   }
   trace!(

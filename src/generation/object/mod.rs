@@ -1,5 +1,5 @@
 pub mod buildings;
-pub(crate) mod lib;
+pub mod lib;
 mod object_generator;
 pub mod path;
 pub mod wfc;

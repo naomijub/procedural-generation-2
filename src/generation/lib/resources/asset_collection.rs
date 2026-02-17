@@ -21,7 +21,7 @@ pub struct AssetCollection {
 }
 
 impl AssetCollection {
-  pub fn index_offset(&self) -> usize {
+  pub const fn index_offset(&self) -> usize {
     self.index_offset
   }
 }

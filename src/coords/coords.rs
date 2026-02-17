@@ -1,4 +1,4 @@
-use crate::coords::point::*;
+use crate::coords::point::{ChunkGrid, InternalGrid, Point, TileGrid, World};
 use std::fmt;
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Default)]
@@ -10,7 +10,7 @@ pub struct Coords {
 }
 
 impl Coords {
-  pub fn new(w: Point<World>, cg: Point<ChunkGrid>, tg: Point<TileGrid>) -> Self {
+  pub const fn new(w: Point<World>, cg: Point<ChunkGrid>, tg: Point<TileGrid>) -> Self {
     Self {
       world: w,
       chunk_grid: cg,
@@ -20,9 +20,9 @@ impl Coords {
   }
 
   pub fn new_for_tile(ig: Point<InternalGrid>, tg: Point<TileGrid>) -> Self {
-    let w = Point::new_world_from_tile_grid(tg.clone());
+    let w = Point::new_world_from_tile_grid(tg);
     Self {
-      chunk_grid: Point::new_chunk_grid_from_world(w.clone()),
+      chunk_grid: Point::new_chunk_grid_from_world(w),
       world: w,
       tile_grid: tg,
       internal_grid: ig,
@@ -30,14 +30,12 @@ impl Coords {
   }
 
   pub fn new_for_chunk(w: Point<World>, tg: Point<TileGrid>) -> Self {
-    let cg = Point::new_chunk_grid_from_world(w.clone());
-    let world = Point::new_world_from_tile_grid(tg.clone());
-    if w != world {
-      panic!(
-        "World coordinates do not match the tile grid coordinates - provided {} vs expected {} based on provided {}",
-        w, world, tg
-      );
-    }
+    let cg = Point::new_chunk_grid_from_world(w);
+    let world = Point::new_world_from_tile_grid(tg);
+    assert!(
+      w == world,
+      "World coordinates do not match the tile grid coordinates - provided {w} vs expected {world} based on provided {tg}"
+    );
     Self {
       world,
       chunk_grid: cg,
@@ -84,16 +82,16 @@ mod tests {
     assert_eq!(coords.internal_grid, ig);
     assert_eq!(coords.tile_grid, tg);
     assert_eq!(coords.world, w);
-    assert_eq!(coords.chunk_grid, Point::new_chunk_grid_from_world(w.clone()));
+    assert_eq!(coords.chunk_grid, Point::new_chunk_grid_from_world(w));
   }
 
   #[test]
   fn new_for_chunk_creates_correct_coords() {
     let w = Point::new_world(3 * TILE_SIZE as i32, 4 * TILE_SIZE as i32);
     let tg = Point::new_tile_grid(3, 4);
-    let coords = Coords::new_for_chunk(w.clone(), tg.clone());
+    let coords = Coords::new_for_chunk(w, tg);
     assert_eq!(coords.world, w);
-    assert_eq!(coords.chunk_grid, Point::new_chunk_grid_from_world(w.clone()));
+    assert_eq!(coords.chunk_grid, Point::new_chunk_grid_from_world(w));
     assert_eq!(coords.tile_grid, tg);
     assert_eq!(coords.internal_grid, Point::new_internal_grid(0, 0));
   }
@@ -109,6 +107,6 @@ mod tests {
   #[test]
   fn debug_format_is_correct() {
     let coords = Coords::new(Point::new(10, 20), Point::new(1, 2), Point::new(3, 4));
-    assert_eq!(format!("{:?}", coords), "[w(10, 20), cg(1, 2), tg(3, 4), ig(0, 0)]");
+    assert_eq!(format!("{coords:?}"), "[w(10, 20), cg(1, 2), tg(3, 4), ig(0, 0)]");
   }
 }

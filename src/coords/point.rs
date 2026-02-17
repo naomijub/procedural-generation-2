@@ -101,7 +101,7 @@ impl<T: CoordType> Add for Point<T> {
 }
 
 impl<T: CoordType> Point<T> {
-  pub fn new(x: i32, y: i32) -> Self {
+  pub const fn new(x: i32, y: i32) -> Self {
     Self {
       x,
       y,
@@ -137,33 +137,33 @@ impl<T: CoordType> Point<T> {
     ((self.x - other.x).pow(2) as f32 + (self.y - other.y).pow(2) as f32).sqrt()
   }
 
-  pub fn is_direct_cardinal_neighbour(&self, other: &Point<T>) -> bool {
+  pub const fn is_direct_cardinal_neighbour(&self, other: &Point<T>) -> bool {
     let dx = (self.x - other.x).abs();
     let dy = (self.y - other.y).abs();
 
     (dx == 1 && dy == 0) || (dx == 0 && dy == 1)
   }
 
-  pub fn to_vec2(&self) -> Vec2 {
+  pub const fn to_vec2(&self) -> Vec2 {
     Vec2::new(self.x as f32, self.y as f32)
   }
 }
 
 impl Point<World> {
-  pub fn new_world(x: i32, y: i32) -> Self {
+  pub const fn new_world(x: i32, y: i32) -> Self {
     Self::new(x, y)
   }
 
   /// Returns a [`Point`] of type [`World`] with the `x` and `y` values rounded to the nearest integer to achieve this.
-  pub fn new_world_from_world_vec2(w: Vec2) -> Self {
+  pub const fn new_world_from_world_vec2(w: Vec2) -> Self {
     Self::new(w.x.round() as i32, w.y.round() as i32)
   }
 
-  pub fn new_world_from_chunk_grid(cg: Point<ChunkGrid>) -> Self {
+  pub const fn new_world_from_chunk_grid(cg: Point<ChunkGrid>) -> Self {
     Self::new(cg.x * CHUNK_SIZE * TILE_SIZE as i32, cg.y * CHUNK_SIZE * TILE_SIZE as i32)
   }
 
-  pub fn new_world_from_tile_grid(tg: Point<TileGrid>) -> Self {
+  pub const fn new_world_from_tile_grid(tg: Point<TileGrid>) -> Self {
     Self::new(tg.x * TILE_SIZE as i32, tg.y * TILE_SIZE as i32)
   }
 }
@@ -171,21 +171,21 @@ impl Point<World> {
 impl Point<InternalGrid> {
   /// Creates new [`Point`] of type [`InternalGrid`] whereby the top left corner of the grid is (0, 0) and x and y
   /// values increase towards the bottom right corner.
-  pub fn new_internal_grid(x: i32, y: i32) -> Self {
+  pub const fn new_internal_grid(x: i32, y: i32) -> Self {
     Self::new(x, y)
   }
 
-  pub fn is_touching_edge(&self) -> bool {
+  pub const fn is_touching_edge(&self) -> bool {
     self.x == 0 || self.x == CHUNK_SIZE - 1 || self.y == 0 || self.y == CHUNK_SIZE - 1
   }
 
-  pub fn is_outside_grid(&self) -> bool {
+  pub const fn is_outside_grid(&self) -> bool {
     self.x < 0 || self.x >= CHUNK_SIZE || self.y < 0 || self.y >= CHUNK_SIZE
   }
 }
 
 impl Point<TileGrid> {
-  pub fn new_tile_grid(x: i32, y: i32) -> Self {
+  pub const fn new_tile_grid(x: i32, y: i32) -> Self {
     Self::new(x, y)
   }
 
@@ -207,7 +207,7 @@ impl Point<TileGrid> {
 }
 
 impl Point<ChunkGrid> {
-  pub fn new_chunk_grid(x: i32, y: i32) -> Self {
+  pub const fn new_chunk_grid(x: i32, y: i32) -> Self {
     Self::new(x, y)
   }
 

@@ -33,23 +33,12 @@ impl Plugin for SharedResourcesPlugin {
   }
 }
 
-#[derive(Resource, Reflect, Clone, Copy)]
+#[derive(Resource, Reflect, Clone, Copy, Default)]
 pub struct Settings {
   pub general: GeneralGenerationSettings,
   pub metadata: GenerationMetadataSettings,
   pub world: WorldGenerationSettings,
   pub object: ObjectGenerationSettings,
-}
-
-impl Default for Settings {
-  fn default() -> Self {
-    Self {
-      general: GeneralGenerationSettings::default(),
-      metadata: GenerationMetadataSettings::default(),
-      world: WorldGenerationSettings::default(),
-      object: ObjectGenerationSettings::default(),
-    }
-  }
 }
 
 #[derive(Resource, Reflect, InspectorOptions, Clone, Copy)]
@@ -235,23 +224,23 @@ pub struct CurrentChunk {
 }
 
 impl CurrentChunk {
-  pub fn get_center_world(&self) -> Point<World> {
+  pub const fn get_center_world(&self) -> Point<World> {
     self.center_w
   }
 
-  pub fn get_world(&self) -> Point<World> {
+  pub const fn get_world(&self) -> Point<World> {
     self.coords.world
   }
 
-  pub fn get_tile_grid(&self) -> Point<TileGrid> {
+  pub const fn get_tile_grid(&self) -> Point<TileGrid> {
     self.coords.tile_grid
   }
 
-  pub fn get_chunk_grid(&self) -> Point<ChunkGrid> {
+  pub const fn get_chunk_grid(&self) -> Point<ChunkGrid> {
     self.coords.chunk_grid
   }
 
-  pub fn contains(&self, tg: Point<TileGrid>) -> bool {
+  pub const fn contains(&self, tg: Point<TileGrid>) -> bool {
     tg.x >= self.coords.tile_grid.x
       && tg.x < (self.coords.tile_grid.x + CHUNK_SIZE)
       && tg.y >= self.coords.tile_grid.y

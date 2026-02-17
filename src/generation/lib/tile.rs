@@ -56,13 +56,13 @@ impl Tile {
     )
   }
 
-  pub fn update_to(&mut self, tile_type: TileType, terrain: TerrainType) {
+  pub const fn update_to(&mut self, tile_type: TileType, terrain: TerrainType) {
     self.terrain = terrain;
     self.tile_type = tile_type;
   }
 }
 
-pub fn is_marked_for_deletion(ig: &Point<InternalGrid>) -> bool {
+pub const fn is_marked_for_deletion(ig: &Point<InternalGrid>) -> bool {
   ig.x < 0 || ig.y < 0 || ig.x > CHUNK_SIZE || ig.y > CHUNK_SIZE
 }
 

@@ -109,7 +109,7 @@ fn right_mouse_click_system(
       .single()
       .expect("Failed to find window")
       .cursor_position()
-      .and_then(|cursor| Some(camera.viewport_to_world(camera_transform, cursor)))
+      .map(|cursor| camera.viewport_to_world(camera_transform, cursor))
       .map(|ray| ray.expect("Failed to find ray").origin.truncate())
     {
       let tg = Point::new_tile_grid_from_world_vec2(vec2);

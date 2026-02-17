@@ -1,7 +1,7 @@
 use crate::constants::ANIMATED_OBJ_COLUMNS;
 use bevy::prelude::{Component, Reflect};
 
-#[derive(PartialEq, Reflect)]
+#[derive(PartialEq, Eq, Reflect)]
 pub enum AnimationType {
   FourFramesHalfSpeed,
   SixFramesRegularSpeed,
@@ -22,7 +22,7 @@ pub struct AnimationSpriteComponent {
 }
 
 impl AnimationSpriteComponent {
-  pub fn new(animation_type: AnimationType, sprite_index: usize) -> Self {
+  pub const fn new(animation_type: AnimationType, sprite_index: usize) -> Self {
     Self {
       animation_type,
       sprite_index: ANIMATED_OBJ_COLUMNS as usize * sprite_index,

@@ -32,7 +32,7 @@ impl TileType {
     climate: &Climate,
     resources: &GenerationResourcesCollection,
   ) -> usize {
-    get_sprite_index_from(&self, terrain, climate, resources)
+    get_sprite_index_from(self, terrain, climate, resources)
   }
 }
 
@@ -43,22 +43,22 @@ fn get_sprite_index_from(
   resources: &GenerationResourcesCollection,
 ) -> usize {
   match (terrain, climate) {
-    (TerrainType::Water, _) => get_sprite_index(&tile_type, resources.water.index_offset()),
-    (TerrainType::Shore, _) => get_sprite_index(&tile_type, resources.shore.index_offset()),
-    (TerrainType::Land1, Climate::Dry) => get_sprite_index(&tile_type, resources.land_dry_l1.index_offset()),
-    (TerrainType::Land1, Climate::Moderate) => get_sprite_index(&tile_type, resources.land_moderate_l1.index_offset()),
-    (TerrainType::Land1, Climate::Humid) => get_sprite_index(&tile_type, resources.land_humid_l1.index_offset()),
-    (TerrainType::Land2, Climate::Dry) => get_sprite_index(&tile_type, resources.land_dry_l2.index_offset()),
-    (TerrainType::Land2, Climate::Moderate) => get_sprite_index(&tile_type, resources.land_moderate_l2.index_offset()),
-    (TerrainType::Land2, Climate::Humid) => get_sprite_index(&tile_type, resources.land_humid_l2.index_offset()),
-    (TerrainType::Land3, Climate::Dry) => get_sprite_index(&tile_type, resources.land_dry_l3.index_offset()),
-    (TerrainType::Land3, Climate::Moderate) => get_sprite_index(&tile_type, resources.land_moderate_l3.index_offset()),
-    (TerrainType::Land3, Climate::Humid) => get_sprite_index(&tile_type, resources.land_humid_l3.index_offset()),
+    (TerrainType::Water, _) => get_sprite_index(tile_type, resources.water.index_offset()),
+    (TerrainType::Shore, _) => get_sprite_index(tile_type, resources.shore.index_offset()),
+    (TerrainType::Land1, Climate::Dry) => get_sprite_index(tile_type, resources.land_dry_l1.index_offset()),
+    (TerrainType::Land1, Climate::Moderate) => get_sprite_index(tile_type, resources.land_moderate_l1.index_offset()),
+    (TerrainType::Land1, Climate::Humid) => get_sprite_index(tile_type, resources.land_humid_l1.index_offset()),
+    (TerrainType::Land2, Climate::Dry) => get_sprite_index(tile_type, resources.land_dry_l2.index_offset()),
+    (TerrainType::Land2, Climate::Moderate) => get_sprite_index(tile_type, resources.land_moderate_l2.index_offset()),
+    (TerrainType::Land2, Climate::Humid) => get_sprite_index(tile_type, resources.land_humid_l2.index_offset()),
+    (TerrainType::Land3, Climate::Dry) => get_sprite_index(tile_type, resources.land_dry_l3.index_offset()),
+    (TerrainType::Land3, Climate::Moderate) => get_sprite_index(tile_type, resources.land_moderate_l3.index_offset()),
+    (TerrainType::Land3, Climate::Humid) => get_sprite_index(tile_type, resources.land_humid_l3.index_offset()),
     (TerrainType::Any, _) => panic!("{}", "Invalid terrain type for drawing a terrain sprite"),
   }
 }
 
-fn get_sprite_index(tile_type: &TileType, index_offset: usize) -> usize {
+const fn get_sprite_index(tile_type: &TileType, index_offset: usize) -> usize {
   match tile_type {
     TileType::Fill => FILL * index_offset,
     TileType::InnerCornerBottomLeft => INNER_CORNER_BOTTOM_LEFT * index_offset,

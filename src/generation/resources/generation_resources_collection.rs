@@ -231,7 +231,7 @@ fn initialise_resources_system(
     TextureAtlasLayout::from_grid(DEFAULT_OBJ_SIZE, BUILDINGS_OBJ_COLUMNS, BUILDINGS_OBJ_ROWS, None, None);
   let static_buildings_atlas_layout = layouts.add(static_buildings_layout);
   asset_collection.objects.buildings.stat =
-    AssetPack::new(asset_server.load(BUILDINGS_OBJ_PATH), static_buildings_atlas_layout.clone());
+    AssetPack::new(asset_server.load(BUILDINGS_OBJ_PATH), static_buildings_atlas_layout);
 
   // Objects: Terrain
   asset_collection.objects.water = object_assets_static(&asset_server, &mut layouts, WATER_OBJ_PATH);
@@ -269,7 +269,7 @@ fn tile_set_static(
   let texture_atlas_layout = layout.add(static_layout);
 
   AssetCollection {
-    stat: AssetPack::new(asset_server.load(tile_set_path.to_string()), texture_atlas_layout.clone()),
+    stat: AssetPack::new(asset_server.load(tile_set_path.to_string()), texture_atlas_layout),
     anim: None,
     animated_tile_types: HashSet::new(),
     index_offset: 1,
@@ -327,7 +327,7 @@ fn object_assets_static(
   let static_atlas_layout = layout.add(static_layout);
 
   AssetCollection {
-    stat: AssetPack::new(asset_server.load(tile_set_path.to_string()), static_atlas_layout.clone()),
+    stat: AssetPack::new(asset_server.load(tile_set_path.to_string()), static_atlas_layout),
     anim: None,
     animated_tile_types: HashSet::new(),
     index_offset: 1,
@@ -432,13 +432,13 @@ fn resolve_rules_to_terrain_states_map(
   for terrain in TerrainType::iter() {
     let relevant_terrain_rules = terrain_rules
       .get(&terrain)
-      .expect(format!("Failed to find rule set for [{:?}] terrain", &terrain).as_str());
+      .unwrap_or_else(|| panic!("Failed to find rule set for [{:?}] terrain", &terrain));
     let resolved_rules_for_terrain: HashMap<TileType, Vec<TerrainState>> = TileType::iter()
       .filter(|&t| t != TileType::Unknown)
       .map(|tile_type| {
         let all_rules_for_tile_type = tile_type_rules
           .get(&tile_type)
-          .expect(&format!("Failed to find rule set for [{:?}] tile type", tile_type));
+          .unwrap_or_else(|| panic!("Failed to find rule set for [{:?}] tile type", tile_type));
         let resolved_rules_for_tile_type = relevant_terrain_rules
           .iter()
           .filter(|rule| all_rules_for_tile_type.contains(&rule.name))
@@ -667,7 +667,7 @@ fn apply_exclusions(
       cloned_states
         .iter_mut()
         .for_each(|entry| entry.1.retain(|state| !excluded_objects.contains(&state.name)));
-      terrain_climate_state_map.insert((terrain.clone(), climate), cloned_states.clone());
+      terrain_climate_state_map.insert((*terrain, climate), cloned_states.clone());
       if !excluded_objects.is_empty() {
         trace!(" ├─> [{}] exclusions to be applied", excluded_objects.len());
         let distinct_objects_after = cloned_states

@@ -67,7 +67,7 @@ impl AppState {
 
 impl Display for AppState {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "{}", format!("{:?}", self))
+    write!(f, "{:?}", self)
   }
 }
 
@@ -80,13 +80,13 @@ pub enum GenerationState {
 
 #[allow(dead_code)]
 impl GenerationState {
-  pub fn name() -> &'static str {
+  pub const fn name() -> &'static str {
     "GenerationState"
   }
 }
 
 impl Display for GenerationState {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "{}", format!("{:?}", self))
+    write!(f, "{:?}", self)
   }
 }

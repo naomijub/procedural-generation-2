@@ -44,11 +44,11 @@ pub fn get_time() -> u128 {
   SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis()
 }
 
-pub fn calculate_seed(cg: Point<ChunkGrid>, seed: u32) -> u64 {
+pub const fn calculate_seed(cg: Point<ChunkGrid>, seed: u32) -> u64 {
   let adjusted_x = cg.x as i64 + i32::MAX as i64;
   let adjusted_y = cg.y as i64 + i32::MAX as i64;
 
-  ((adjusted_x as u64) << 32) ^ (adjusted_y as u64) + seed as u64
+  ((adjusted_x as u64) << 32) ^ ((adjusted_y as u64) + seed as u64)
 }
 
 pub fn to_colour_32(colour: Color) -> Color32 {

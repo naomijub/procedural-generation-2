@@ -79,7 +79,7 @@ impl LayeredPlane {
     self
       .planes
       .iter()
-      .filter(|plane| if let Some(_) = plane.get_tile(*ig) { true } else { false })
+      .filter(|plane| plane.get_tile(*ig).is_some())
       .max_by(|a, b| a.layer.cmp(&b.layer))
       .map(|plane| plane.get_tile(*ig).expect("Tile should exist on the highest layer"))
   }

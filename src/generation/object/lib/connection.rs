@@ -11,12 +11,12 @@ pub enum Connection {
 }
 
 impl Connection {
-  pub(crate) fn opposite(&self) -> Self {
+  pub(crate) const fn opposite(&self) -> Self {
     match self {
-      Connection::Top => Connection::Bottom,
-      Connection::Right => Connection::Left,
-      Connection::Bottom => Connection::Top,
-      Connection::Left => Connection::Right,
+      Self::Top => Self::Bottom,
+      Self::Right => Self::Left,
+      Self::Bottom => Self::Top,
+      Self::Left => Self::Right,
     }
   }
 }

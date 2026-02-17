@@ -57,14 +57,15 @@ fn render_settings_ui_system(world: &mut World, mut disabled: Local<bool>) {
     return;
   }
 
-  let mut egui_context = if let Ok(context) = world
+  let mut egui_context = world
     .query_filtered::<&mut EguiContext, With<PrimaryEguiContext>>()
     .single(world)
-  {
-    context.clone()
-  } else {
-    panic!("No egui context found");
-  };
+    .map_or_else(
+      |_| {
+        panic!("No egui context found");
+      },
+      |context| context.clone(),
+    );
 
   // Increase the default tooltip width in order to allow documentation comments to be displayed without double
   // line-breaking - if this ever breaks the UI, remove it and use single line comments for settings instead

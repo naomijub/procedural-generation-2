@@ -96,35 +96,28 @@ pub fn generate_object_data(
 
 fn generate_tile_data(chunk: &Chunk, chunk_entity: Entity) -> Vec<TileData> {
   let mut tile_data = Vec::new();
-  for t in chunk.layered_plane.flat.data.iter().flatten() {
-    if let Some(tile) = t {
-      tile_data.push(TileData::new(chunk_entity, tile.clone()));
-    }
+  for tile in chunk.layered_plane.flat.data.iter().flatten().flatten() {
+    tile_data.push(TileData::new(chunk_entity, *tile));
   }
 
   tile_data
 }
 
-fn convert_grid_to_object_data(grid: ObjectGrid, tile_data: &Vec<TileData>, is_decoration_enabled: bool) -> Vec<ObjectData> {
+fn convert_grid_to_object_data(grid: ObjectGrid, tile_data: &[TileData], is_decoration_enabled: bool) -> Vec<ObjectData> {
   let mut object_data = vec![];
-  object_data.extend(
-    tile_data
-      .iter()
-      .filter_map(|tile_data| {
-        if is_decoration_enabled {
-          grid
-            .get_cell(&tile_data.flat_tile.coords.internal_grid)
-            .filter(|cell| cell.get_index() != 0) // Sprite index 0 is always transparent
-            .map(|cell| ObjectData::from(cell, tile_data))
-        } else {
-          grid
-            .get_cell(&tile_data.flat_tile.coords.internal_grid)
-            .filter(|cell| cell.get_index() != 0 && cell.is_collapsed()) // Also ignore non-collapsed cells since WFC did not run
-            .map(|cell| ObjectData::from(cell, tile_data))
-        }
-      })
-      .collect::<Vec<ObjectData>>(),
-  );
+  object_data.extend(tile_data.iter().filter_map(|tile_data| {
+    if is_decoration_enabled {
+      grid
+        .get_cell(&tile_data.flat_tile.coords.internal_grid)
+        .filter(|cell| cell.get_index() != 0) // Sprite index 0 is always transparent
+        .map(|cell| ObjectData::from(cell, tile_data))
+    } else {
+      grid
+        .get_cell(&tile_data.flat_tile.coords.internal_grid)
+        .filter(|cell| cell.get_index() != 0 && cell.is_collapsed()) // Also ignore non-collapsed cells since WFC did not run
+        .map(|cell| ObjectData::from(cell, tile_data))
+    }
+  }));
 
   object_data
 }
@@ -132,17 +125,15 @@ fn convert_grid_to_object_data(grid: ObjectGrid, tile_data: &Vec<TileData>, is_d
 pub fn schedule_spawning_objects(
   commands: &mut Commands,
   settings: &Settings,
-  mut rng: &mut StdRng,
+  rng: &mut StdRng,
   object_data: Vec<ObjectData>,
 ) {
-  let chunk_cg = object_data
-    .first()
-    .map_or(None, |o| Some(o.tile_data.flat_tile.coords.chunk_grid));
+  let chunk_cg = object_data.first().map(|o| o.tile_data.flat_tile.coords.chunk_grid);
   let start_time = shared::get_time();
   let task_pool = AsyncComputeTaskPool::get();
   let object_data_len = object_data.len();
   for object in object_data {
-    attach_object_spawn_task(commands, settings, &mut rng, task_pool, object);
+    attach_object_spawn_task(commands, settings, rng, task_pool, object);
   }
   if let Some(cg) = chunk_cg {
     debug!(
@@ -158,15 +149,15 @@ pub fn schedule_spawning_objects(
 fn attach_object_spawn_task(
   commands: &mut Commands,
   settings: &Settings,
-  mut rng: &mut StdRng,
+  rng: &mut StdRng,
   task_pool: &AsyncComputeTaskPool,
   object_data: ObjectData,
 ) {
   let sprite_index = object_data.sprite_index;
-  let tile_data = object_data.tile_data.clone();
+  let tile_data = object_data.tile_data;
   let object_name = object_data.name.expect("Failed to get object name");
-  let (offset_x, offset_y) = get_sprite_offsets(&mut rng, &object_data);
-  let colour = get_randomised_colour(settings, &mut rng, &object_data);
+  let (offset_x, offset_y) = get_sprite_offsets(rng, &object_data);
+  let colour = get_randomised_colour(settings, rng, &object_data);
   let is_animated = object_name.is_animated();
   let task = task_pool.spawn(async move {
     let mut command_queue = CommandQueue::default();
@@ -267,13 +258,13 @@ fn sprite(
     Anchor::BOTTOM_CENTER,
     Transform::from_xyz(
       tile.coords.world.x as f32 + TILE_SIZE as f32 / 2. + offset_x,
-      tile.coords.world.y as f32 + TILE_SIZE as f32 * -1. + offset_y,
+      tile.coords.world.y as f32 + -(TILE_SIZE as f32) + offset_y,
       z,
     ),
     ObjectComponent {
       coords: tile.coords,
       sprite_index: index as usize,
-      object_name: object_name.clone(),
+      object_name,
       layer: z as i32,
     },
   )

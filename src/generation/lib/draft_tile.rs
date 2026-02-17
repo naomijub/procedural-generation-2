@@ -36,13 +36,13 @@ impl DraftTile {
     }
   }
 
-  pub fn clone_with_modified_terrain(&self, terrain: TerrainType) -> Self {
+  pub const fn clone_with_modified_terrain(&self, terrain: TerrainType) -> Self {
     Self {
-      coords: self.coords.clone(),
+      coords: self.coords,
       terrain,
       climate: self.climate,
       layer: terrain as i32,
-      debug_data: self.debug_data.clone(),
+      debug_data: self.debug_data,
     }
   }
 }
