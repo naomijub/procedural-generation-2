@@ -12,7 +12,7 @@ pub struct NeighbourTile<T: CoordType> {
 }
 
 impl<T: CoordType> NeighbourTile<T> {
-  pub fn default(direction: Point<T>) -> Self {
+  pub const fn default(direction: Point<T>) -> Self {
     Self {
       direction,
       terrain: TerrainType::Any,
@@ -20,7 +20,7 @@ impl<T: CoordType> NeighbourTile<T> {
     }
   }
 
-  pub fn new(direction: Point<T>, terrain_type: TerrainType, is_same: bool) -> NeighbourTile<T> {
+  pub const fn new(direction: Point<T>, terrain_type: TerrainType, is_same: bool) -> Self {
     NeighbourTile {
       direction,
       terrain: terrain_type,
@@ -56,43 +56,43 @@ impl<T: CoordType> NeighbourTiles<T> {
     }
   }
 
-  pub fn all_direction_top_left_same(&self) -> bool {
+  pub const fn all_direction_top_left_same(&self) -> bool {
     self.top_left.same && self.top.same && self.left.same
   }
 
-  pub fn all_direction_top_right_same(&self) -> bool {
+  pub const fn all_direction_top_right_same(&self) -> bool {
     self.top.same && self.top_right.same && self.right.same
   }
 
-  pub fn all_direction_bottom_left_same(&self) -> bool {
+  pub const fn all_direction_bottom_left_same(&self) -> bool {
     self.left.same && self.bottom.same && self.bottom_left.same
   }
 
-  pub fn all_direction_bottom_right_same(&self) -> bool {
+  pub const fn all_direction_bottom_right_same(&self) -> bool {
     self.bottom.same && self.bottom_right.same && self.right.same
   }
 
-  pub fn all_direction_top_left_different(&self) -> bool {
+  pub const fn all_direction_top_left_different(&self) -> bool {
     !self.top_left.same && !self.top.same && !self.left.same
   }
 
-  pub fn all_direction_top_right_different(&self) -> bool {
+  pub const fn all_direction_top_right_different(&self) -> bool {
     !self.top.same && !self.top_right.same && !self.right.same
   }
 
-  pub fn all_direction_bottom_left_different(&self) -> bool {
+  pub const fn all_direction_bottom_left_different(&self) -> bool {
     !self.left.same && !self.bottom.same && !self.bottom_left.same
   }
 
-  pub fn all_direction_bottom_right_different(&self) -> bool {
+  pub const fn all_direction_bottom_right_different(&self) -> bool {
     !self.bottom.same && !self.bottom_right.same && !self.right.same
   }
 
-  pub fn all_top_same(&self) -> bool {
+  pub const fn all_top_same(&self) -> bool {
     self.top_left.same && self.top.same && self.top_right.same
   }
 
-  pub fn all_top_different(&self) -> bool {
+  pub const fn all_top_different(&self) -> bool {
     !self.top_left.same && !self.top.same && !self.top_right.same
   }
 
@@ -104,11 +104,11 @@ impl<T: CoordType> NeighbourTiles<T> {
       == expected
   }
 
-  pub fn all_bottom_same(&self) -> bool {
+  pub const fn all_bottom_same(&self) -> bool {
     self.bottom_left.same && self.bottom.same && self.bottom_right.same
   }
 
-  pub fn all_bottom_different(&self) -> bool {
+  pub const fn all_bottom_different(&self) -> bool {
     !self.bottom_left.same && !self.bottom.same && !self.bottom_right.same
   }
 
@@ -120,11 +120,11 @@ impl<T: CoordType> NeighbourTiles<T> {
       == expected
   }
 
-  pub fn all_left_same(&self) -> bool {
+  pub const fn all_left_same(&self) -> bool {
     self.top_left.same && self.left.same && self.bottom_left.same
   }
 
-  pub fn all_left_different(&self) -> bool {
+  pub const fn all_left_different(&self) -> bool {
     !self.top_left.same && !self.left.same && !self.bottom_left.same
   }
 
@@ -136,11 +136,11 @@ impl<T: CoordType> NeighbourTiles<T> {
       == expected
   }
 
-  pub fn all_right_same(&self) -> bool {
+  pub const fn all_right_same(&self) -> bool {
     self.top_right.same && self.right.same && self.bottom_right.same
   }
 
-  pub fn all_right_different(&self) -> bool {
+  pub const fn all_right_different(&self) -> bool {
     !self.top_right.same && !self.right.same && !self.bottom_right.same
   }
 
@@ -152,7 +152,7 @@ impl<T: CoordType> NeighbourTiles<T> {
       == expected
   }
 
-  pub fn all_sides_same(&self) -> bool {
+  pub const fn all_sides_same(&self) -> bool {
     self.top.same && self.right.same && self.bottom.same && self.left.same
   }
 

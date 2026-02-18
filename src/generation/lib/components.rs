@@ -14,7 +14,7 @@ pub struct WorldComponent;
 
 /// A component that is attached to every chunk entity that is spawned in the world. Used in the
 /// [`crate::generation::resources::ChunkComponentIndex`] but also by other core processes such as pruning the world.
-#[derive(Component, Debug, Clone, PartialEq)]
+#[derive(Component, Debug, Clone, PartialEq, Eq)]
 pub struct ChunkComponent {
   pub coords: Coords,
   pub layered_plane: LayeredPlane,
@@ -31,7 +31,7 @@ pub struct TileMeshComponent {
 }
 
 impl TileMeshComponent {
-  pub fn new(parent_chunk_entity: Entity, cg: Point<ChunkGrid>, tiles: Vec<Tile>) -> Self {
+  pub const fn new(parent_chunk_entity: Entity, cg: Point<ChunkGrid>, tiles: Vec<Tile>) -> Self {
     Self {
       parent_chunk_entity,
       cg,
@@ -39,7 +39,7 @@ impl TileMeshComponent {
     }
   }
 
-  pub fn cg(&self) -> Point<ChunkGrid> {
+  pub const fn cg(&self) -> Point<ChunkGrid> {
     self.cg
   }
 
@@ -97,16 +97,16 @@ pub enum GenerationStage {
 impl PartialEq for GenerationStage {
   fn eq(&self, other: &Self) -> bool {
     match (self, other) {
-      (GenerationStage::Stage1(_), GenerationStage::Stage1(_)) => true,
-      (GenerationStage::Stage2(_), GenerationStage::Stage2(_)) => true,
-      (GenerationStage::Stage3(_), GenerationStage::Stage3(_)) => true,
-      (GenerationStage::Stage4(_), GenerationStage::Stage4(_)) => true,
-      (GenerationStage::Stage5(_), GenerationStage::Stage5(_)) => true,
-      (GenerationStage::Stage6(_), GenerationStage::Stage6(_)) => true,
-      (GenerationStage::Stage7(_), GenerationStage::Stage7(_)) => true,
-      (GenerationStage::Stage8(_), GenerationStage::Stage8(_)) => true,
-      (GenerationStage::Stage9, GenerationStage::Stage9) => true,
-      (GenerationStage::Done, GenerationStage::Done) => true,
+      (GenerationStage::Stage1(_), GenerationStage::Stage1(_))
+      | (GenerationStage::Stage2(_), GenerationStage::Stage2(_))
+      | (GenerationStage::Stage3(_), GenerationStage::Stage3(_))
+      | (GenerationStage::Stage4(_), GenerationStage::Stage4(_))
+      | (GenerationStage::Stage5(_), GenerationStage::Stage5(_))
+      | (GenerationStage::Stage6(_), GenerationStage::Stage6(_))
+      | (GenerationStage::Stage7(_), GenerationStage::Stage7(_))
+      | (GenerationStage::Stage8(_), GenerationStage::Stage8(_))
+      | (GenerationStage::Stage9, GenerationStage::Stage9)
+      | (GenerationStage::Done, GenerationStage::Done) => true,
       _ => false,
     }
   }
@@ -115,16 +115,16 @@ impl PartialEq for GenerationStage {
 impl Display for GenerationStage {
   fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
     match self {
-      GenerationStage::Stage1(_) => write!(f, "Stage 1"),
-      GenerationStage::Stage2(_) => write!(f, "Stage 2"),
-      GenerationStage::Stage3(_) => write!(f, "Stage 3"),
-      GenerationStage::Stage4(_) => write!(f, "Stage 4"),
-      GenerationStage::Stage5(_) => write!(f, "Stage 5"),
-      GenerationStage::Stage6(_) => write!(f, "Stage 6"),
-      GenerationStage::Stage7(_) => write!(f, "Stage 7"),
-      GenerationStage::Stage8(_) => write!(f, "Stage 8"),
-      GenerationStage::Stage9 => write!(f, "Stage 9"),
-      GenerationStage::Done => write!(f, "Done"),
+      Self::Stage1(_) => write!(f, "Stage 1"),
+      Self::Stage2(_) => write!(f, "Stage 2"),
+      Self::Stage3(_) => write!(f, "Stage 3"),
+      Self::Stage4(_) => write!(f, "Stage 4"),
+      Self::Stage5(_) => write!(f, "Stage 5"),
+      Self::Stage6(_) => write!(f, "Stage 6"),
+      Self::Stage7(_) => write!(f, "Stage 7"),
+      Self::Stage8(_) => write!(f, "Stage 8"),
+      Self::Stage9 => write!(f, "Stage 9"),
+      Self::Done => write!(f, "Done"),
     }
   }
 }
@@ -141,7 +141,7 @@ pub struct WorldGenerationComponent {
 }
 
 impl WorldGenerationComponent {
-  pub fn new(w: Point<World>, cg: Point<ChunkGrid>, suppress_pruning_world: bool, created_at: u128) -> Self {
+  pub const fn new(w: Point<World>, cg: Point<ChunkGrid>, suppress_pruning_world: bool, created_at: u128) -> Self {
     Self {
       created_at,
       stage: GenerationStage::Stage1(false),

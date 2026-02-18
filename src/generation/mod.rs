@@ -127,7 +127,7 @@ fn update_world_message(
       debug!("{} is inside current chunk, ignoring message...", message.tg);
       return;
     }
-    let new_parent_w = calculate_new_current_chunk_w(&mut current_chunk, &message);
+    let new_parent_w = calculate_new_current_chunk_w(&mut current_chunk, message);
     let new_parent_cg = Point::new_chunk_grid_from_world(new_parent_w);
     debug!("Updating world with new current chunk at {} {}", new_parent_w, new_parent_cg);
     commands.spawn((
@@ -258,9 +258,9 @@ fn stage_1_prune_world_and_schedule_chunk_generation(
       });
     }
 
-    let settings = settings.clone();
+    let settings = *settings;
     let metadata = metadata.clone();
-    let spawn_points = calculate_chunk_spawn_points(&existing_chunks, &settings, &component.w);
+    let spawn_points = calculate_chunk_spawn_points(existing_chunks, &settings, &component.w);
     let task_pool = AsyncComputeTaskPool::get();
     let task = task_pool.spawn(async move { world::generate_chunks(spawn_points, metadata, &settings) });
     return GenerationStage::Stage2(task);
@@ -275,10 +275,10 @@ fn calculate_chunk_spawn_points(
   new_parent_chunk_w: &Point<World>,
 ) -> Vec<Point<World>> {
   let mut spawn_points = Vec::new();
-  get_direction_points(&new_parent_chunk_w)
+  get_direction_points(new_parent_chunk_w)
     .iter()
     .for_each(|(direction, chunk_w)| {
-      if let Some(_) = existing_chunks.get(&chunk_w) {
+      if existing_chunks.get(chunk_w).is_some() {
         trace!("✅  [{:?}] chunk at {:?} already exists", direction, chunk_w);
       } else {
         if !settings.general.generate_neighbour_chunks && chunk_w != new_parent_chunk_w {
@@ -289,7 +289,7 @@ fn calculate_chunk_spawn_points(
           return;
         }
         trace!("🚫 [{:?}] chunk at {:?} needs to be generated", direction, chunk_w);
-        spawn_points.push(chunk_w.clone());
+        spawn_points.push(*chunk_w);
       }
     });
 
@@ -303,7 +303,13 @@ fn stage_2_await_chunk_generation_task_completion(
   cg: &Point<ChunkGrid>,
 ) -> GenerationStage {
   if chunk_generation_task.is_finished() {
-    return if let Some(mut chunks) = block_on(poll_once(chunk_generation_task)) {
+    return block_on(poll_once(chunk_generation_task)).map_or_else(|| {
+      trace!(
+        "World generation component {cg} - Stage 2 | Chunk generation task did not return any chunks - they probably exist already..."
+      );
+
+      GenerationStage::Stage9
+    }, |mut chunks| {
       chunks.retain_mut(|chunk| existing_chunks.get(&chunk.coords.world).is_none());
       trace!(
         "World generation component {cg} - Stage 2 | {} new chunks need to be spawned",
@@ -311,13 +317,7 @@ fn stage_2_await_chunk_generation_task_completion(
       );
 
       GenerationStage::Stage3(chunks)
-    } else {
-      trace!(
-        "World generation component {cg} - Stage 2 | Chunk generation task did not return any chunks - they probably exist already..."
-      );
-
-      GenerationStage::Stage9
-    };
+    });
   }
 
   GenerationStage::Stage2(chunk_generation_task)
@@ -333,7 +333,7 @@ fn stage_3_spawn_chunks(
 ) -> GenerationStage {
   if !chunks.is_empty() {
     let mut chunk_entity_pairs = Vec::new();
-    for chunk in chunks.drain(0..) {
+    for chunk in chunks.into_iter() {
       if existing_chunks.get(&chunk.coords.world).is_none() {
         commands.entity(world_entity).with_children(|parent| {
           let chunk_entity = world::spawn_chunk(parent, &chunk);
@@ -356,7 +356,7 @@ fn stage_3_spawn_chunks(
 
 /// See [`GenerationStage::Stage4`] for more information.
 fn stage_4_spawn_tile_meshes(
-  mut commands: &mut Commands,
+  commands: &mut Commands,
   settings: &Res<Settings>,
   resources: &GenerationResourcesCollection,
   mut chunk_entity_pairs: Vec<(Chunk, Entity)>,
@@ -366,17 +366,9 @@ fn stage_4_spawn_tile_meshes(
 ) -> GenerationStage {
   if !chunk_entity_pairs.is_empty() {
     let mut new_chunk_entity_pairs = Vec::new();
-    for (chunk, chunk_entity) in chunk_entity_pairs.drain(..) {
+    for (chunk, chunk_entity) in chunk_entity_pairs.into_iter() {
       if commands.get_entity(chunk_entity).is_ok() {
-        world::spawn_tiles(
-          &mut commands,
-          chunk_entity,
-          chunk.clone(),
-          &settings,
-          &resources,
-          meshes,
-          materials,
-        );
+        world::spawn_tiles(commands, chunk_entity, chunk.clone(), settings, resources, meshes, materials);
         new_chunk_entity_pairs.push((chunk, chunk_entity));
       } else {
         trace!(
@@ -404,14 +396,14 @@ fn stage_5_schedule_object_grid_generation(
 ) -> GenerationStage {
   if !chunk_entity_pairs.is_empty() {
     chunk_entity_pairs.retain(|(_, chunk_entity)| commands.get_entity(*chunk_entity).is_ok());
-    let settings = settings.clone();
+    let settings = *settings;
     let resources = resources.clone();
     let task_pool = AsyncComputeTaskPool::get();
     let task = task_pool.spawn(async move {
       let mut triplets = Vec::new();
-      for (chunk, chunk_entity) in chunk_entity_pairs.drain(..) {
+      for (chunk, chunk_entity) in chunk_entity_pairs.into_iter() {
         let resources = resources.clone();
-        let settings = settings.clone();
+        let settings = settings;
         if let Some(triplet) = object::generate_object_grid(&resources, &settings, chunk, chunk_entity) {
           triplets.push(triplet);
         }
@@ -440,12 +432,12 @@ fn stage_6_schedule_path_generation(
   if object_grid_generation_task.is_finished() {
     return if let Some(mut triplets) = block_on(poll_once(object_grid_generation_task)) {
       triplets.retain(|(_, chunk_entity, _)| commands.get_entity(*chunk_entity).is_ok());
-      let settings = settings.clone();
+      let settings = *settings;
       let metadata = metadata.clone();
       let task_pool = AsyncComputeTaskPool::get();
       let task = task_pool.spawn(async move {
         let mut new_chunk_entity_grid_triplets = Vec::new();
-        for (chunk, chunk_entity, mut object_grid) in triplets.drain(..) {
+        for (chunk, chunk_entity, mut object_grid) in triplets.into_iter() {
           let rng = StdRng::seed_from_u64(shared::calculate_seed(chunk.coords.chunk_grid, settings.world.noise_seed));
           path::place_paths_on_grid(&mut object_grid, &settings, &metadata, rng);
           new_chunk_entity_grid_triplets.push((chunk, chunk_entity, object_grid))
@@ -479,9 +471,9 @@ fn stage_7_schedule_generating_object_data(
   if path_generation_task.is_finished() {
     let mut object_generation_tasks = Vec::new();
     return if let Some(mut triplets) = block_on(poll_once(path_generation_task)) {
-      for (chunk, chunk_entity, mut object_grid) in triplets.drain(..) {
+      for (chunk, chunk_entity, mut object_grid) in triplets.into_iter() {
         if commands.get_entity(chunk_entity).is_ok() {
-          let settings = settings.clone();
+          let settings = *settings;
           let metadata = metadata.clone();
           let task_pool = AsyncComputeTaskPool::get();
           let task = task_pool.spawn(async move {
@@ -518,7 +510,7 @@ fn stage_7_schedule_generating_object_data(
 
 /// See [`GenerationStage::Stage8`] for more information.
 fn stage_8_schedule_spawning_objects(
-  mut commands: &mut Commands,
+  commands: &mut Commands,
   settings: &Settings,
   mut object_generation_task: Vec<Task<Vec<ObjectData>>>,
   cg: &Point<ChunkGrid>,
@@ -528,7 +520,7 @@ fn stage_8_schedule_spawning_objects(
       if task.is_finished() {
         let object_data = block_on(poll_once(task)).expect("Failed to get object data");
         let mut rng = StdRng::seed_from_u64(shared::calculate_seed(*cg, settings.world.noise_seed));
-        object::schedule_spawning_objects(&mut commands, &settings, &mut rng, object_data);
+        object::schedule_spawning_objects(commands, settings, &mut rng, object_data);
 
         false
       } else {

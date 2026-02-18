@@ -60,7 +60,7 @@ impl PartialEq for Cell {
 impl Cell {
   /// Creates a new [`Cell`] with default values at the given internal grid coordinates.
   pub fn new(x: i32, y: i32) -> Self {
-    Cell {
+    Self {
       ig: Point::new_internal_grid(x, y),
       index: -1,
       terrain: TerrainType::Any,
@@ -86,7 +86,7 @@ impl Cell {
     &mut self,
     terrain_type: TerrainType,
     tile_type: TileType,
-    states: &Vec<TerrainState>,
+    states: &[TerrainState],
     lower_layer_info: Vec<(TerrainType, TileType)>,
     is_monitored: bool,
   ) {
@@ -111,18 +111,18 @@ impl Cell {
     } else {
       Some(TileBelow::new(lower_layer_info))
     };
-    self.possible_states = states.clone();
+    self.possible_states = states.to_vec();
     self.entropy = self.possible_states.len();
   }
 
   /// Returns a reference to the coordinates of this cell.
-  pub fn get_ig(&self) -> &Point<InternalGrid> {
+  pub const fn get_ig(&self) -> &Point<InternalGrid> {
     &self.ig
   }
 
   /// Returns the sprite index of this cell. No information about the resource the index refers to is stored, but
   /// it can be inferred from other fields such as [`Cell::get_terrain`] and [`Cell::get_tile_type`].
-  pub fn get_index(&self) -> i32 {
+  pub const fn get_index(&self) -> i32 {
     self.index
   }
 
@@ -173,23 +173,23 @@ impl Cell {
   }
 
   /// The distance from the start cell to this cell.
-  pub fn get_g(&self) -> f32 {
+  pub const fn get_g(&self) -> f32 {
     self.g
   }
 
   /// Sets the `G` cost which represents the distance from the start cell to this cell.
-  pub fn set_g(&mut self, g: f32) {
+  pub const fn set_g(&mut self, g: f32) {
     self.g = g;
   }
 
   /// The heuristic value, which is the estimated ("ideal") distance to reach the target cell from this cell. This
   /// value is always equal to or less than the actual distance to the target cell.
-  pub fn get_h(&self) -> f32 {
+  pub const fn get_h(&self) -> f32 {
     self.h
   }
 
   /// Sets the `H` cost i.e. heuristic value, which is the estimated distance to reach the target cell from this cell.
-  pub fn set_h(&mut self, h: f32) {
+  pub const fn set_h(&mut self, h: f32) {
     self.h = h;
   }
 
@@ -200,7 +200,7 @@ impl Cell {
   }
 
   /// Returns whether this cell is walkable.
-  pub fn is_walkable(&self) -> bool {
+  pub const fn is_walkable(&self) -> bool {
     self.is_walkable
   }
 
@@ -225,7 +225,7 @@ impl Cell {
   /// - The [`Cell`] is facing the edge of a chunk and is "filled towards to edge" while the touching tile on
   ///   the neighbouring chunk is [`TileType::Fill`]. Therefore, this [`Cell`] must be included.
   /// - The [`Cell`] is of a [`TileType`] and [`TerrainType`] combination that is not conclusive, but it has a
-  /// [`TileBelow`] that is considered walkable. In this case, the [`Cell`] is still a valid connection point.
+  ///   [`TileBelow`] that is considered walkable. In this case, the [`Cell`] is still a valid connection point.
   pub fn is_valid_connection_point(&self) -> bool {
     if !self.is_walkable_connection() {
       return false;
@@ -236,7 +236,7 @@ impl Cell {
     if self.terrain > TerrainType::Land1 && is_filled_at_facing_edge_including_corner_types(self.ig, self.tile_type) {
       return true;
     }
-    self.tile_below.as_ref().map_or(false, |tile_below| {
+    self.tile_below.as_ref().is_some_and(|tile_below| {
       let mut current = Some(tile_below);
       while let Some(below) = current {
         if is_filled_at_facing_edge(self.ig, below.tile_type) && below.terrain >= TerrainType::Land1 {
@@ -255,7 +255,7 @@ impl Cell {
       return false;
     }
 
-    self.tile_below.as_ref().map_or(false, |tile_below| {
+    self.tile_below.as_ref().is_some_and(|tile_below| {
       let mut current = Some(tile_below);
       while let Some(below) = current {
         if below.terrain == TerrainType::Land1 && below.tile_type == TileType::Fill {
@@ -276,16 +276,16 @@ impl Cell {
   }
 
   /// Sets the collapsed state of this [`Cell`].
-  pub fn is_collapsed(&self) -> bool {
+  pub const fn is_collapsed(&self) -> bool {
     self.is_collapsed
   }
 
   /// Returns the entropy of this [`Cell`], which is the number of possible states it can collapse to.
-  pub fn get_entropy(&self) -> usize {
+  pub const fn get_entropy(&self) -> usize {
     self.entropy
   }
 
-  pub fn get_possible_states(&self) -> &Vec<TerrainState> {
+  pub const fn get_possible_states(&self) -> &Vec<TerrainState> {
     &self.possible_states
   }
 
@@ -300,7 +300,7 @@ impl Cell {
   /// used for pathfinding.
   pub fn clear_references(&mut self) {
     self.neighbours.clear();
-    self.connection = Box::new(None);
+    *self.connection = None;
     self.g = 0.0;
     self.h = 0.0;
   }
@@ -321,11 +321,11 @@ impl Cell {
   /// If the [`Cell`] has no possible states left after the reduction, an error is returned.
   pub fn clone_and_reduce(
     &self,
-    reference_cell: &Cell,
+    reference_cell: &Self,
     where_is_self_for_reference: &Connection,
     is_failure_log_level_increased: bool,
   ) -> Result<(bool, Self), PropagationFailure> {
-    let permitted_state_names = get_permitted_state_names(&reference_cell, &where_is_self_for_reference);
+    let permitted_state_names = get_permitted_state_names(reference_cell, where_is_self_for_reference);
 
     let mut updated_possible_states = Vec::new();
     for possible_state_self in &self.possible_states {
@@ -337,7 +337,7 @@ impl Cell {
     let mut clone = self.clone();
     clone.possible_states = updated_possible_states;
     clone.entropy = self.possible_states.len();
-    let result = if clone.possible_states.len() == 0 {
+    let result = if clone.possible_states.is_empty() {
       ResultType::FailedUpdate
     } else {
       ResultType::SuccessfulUpdate
@@ -345,7 +345,7 @@ impl Cell {
     log_reduce_or_verify_result(
       result,
       self,
-      &mut clone,
+      &clone,
       &permitted_state_names,
       reference_cell,
       where_is_self_for_reference,
@@ -383,7 +383,7 @@ impl Cell {
       let selected_state = selected_state.expect("Failed to get selected state");
 
       log_collapse_result(
-        &self,
+        self,
         possible_states_count,
         total_weight,
         &mut states_logs,
@@ -418,17 +418,17 @@ impl Cell {
   /// If the current state of this [`Cell`] is not valid.
   pub fn verify(
     &self,
-    reference_cell: &Cell,
+    reference_cell: &Self,
     where_is_self_for_reference: &Connection,
     is_failure_log_level_increased: bool,
   ) -> Result<(), PropagationFailure> {
-    let permitted_state_names = get_permitted_state_names(&reference_cell, &where_is_self_for_reference);
+    let permitted_state_names = get_permitted_state_names(reference_cell, where_is_self_for_reference);
 
     if !permitted_state_names.contains(&self.possible_states[0].name) {
       log_reduce_or_verify_result(
         ResultType::FailedVerification,
         self,
-        &mut self.clone(),
+        &self.clone(),
         &permitted_state_names,
         reference_cell,
         where_is_self_for_reference,
@@ -487,7 +487,7 @@ fn is_filled_at_facing_edge(ig: Point<InternalGrid>, tile_type: TileType) -> boo
     || tile_type == TileType::Fill
 }
 
-fn is_filled_at_facing_edge_including_corner_types(ig: Point<InternalGrid>, tile_type: TileType) -> bool {
+const fn is_filled_at_facing_edge_including_corner_types(ig: Point<InternalGrid>, tile_type: TileType) -> bool {
   use TileType::*;
   match tile_type {
     Fill | BottomFill | TopFill if ig.x == 0 || ig.x == CHUNK_SIZE - 1 => true,
@@ -880,7 +880,7 @@ mod tests {
       ..Cell::new(0, 0)
     };
     let (has_changed, processed_cell) = cell.clone_and_reduce(&reference_cell, &Connection::Bottom, false).unwrap();
-    assert_eq!(has_changed, false);
+    assert!(!has_changed);
     assert_eq!(processed_cell.possible_states.len(), 1);
     assert_eq!(cell.possible_states.len(), 1);
   }
@@ -900,7 +900,7 @@ mod tests {
       ..Cell::new(0, 0)
     };
     let (has_changed, processed_cell) = cell.clone_and_reduce(&reference_cell, &Connection::Top, false).unwrap();
-    assert_eq!(has_changed, true);
+    assert!(has_changed);
     assert_eq!(processed_cell.possible_states.len(), 1);
     assert_eq!(cell.possible_states.len(), 2);
   }

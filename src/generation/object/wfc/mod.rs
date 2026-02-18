@@ -15,7 +15,7 @@ impl Plugin for WfcPlugin {
 }
 
 /// The entry point for running the wave function collapse algorithm to determine the object sprites in the grid.
-pub fn place_decorative_objects_on_grid(object_grid: &mut ObjectGrid, settings: &Settings, mut rng: &mut StdRng) {
+pub fn place_decorative_objects_on_grid(object_grid: &mut ObjectGrid, settings: &Settings, rng: &mut StdRng) {
   let start_time = shared::get_time();
   let mut next_warning_time = start_time + WAVE_FUNCTION_COLLAPSE_WARNING_FREQUENCY;
   object_grid.validate();
@@ -27,7 +27,7 @@ pub fn place_decorative_objects_on_grid(object_grid: &mut ObjectGrid, settings: 
     let mut has_entropy = true;
 
     while has_entropy {
-      match iterate(&mut rng, object_grid) {
+      match iterate(rng, object_grid) {
         IterationResult::Failure => handle_failure(
           object_grid,
           &mut snapshots,
@@ -59,7 +59,7 @@ pub fn place_decorative_objects_on_grid(object_grid: &mut ObjectGrid, settings: 
     start_time,
     snapshot_error_count,
     total_error_count,
-    &object_grid,
+    object_grid,
     is_decoration_enabled,
   );
 }
@@ -71,7 +71,7 @@ pub fn place_decorative_objects_on_grid(object_grid: &mut ObjectGrid, settings: 
 ///
 /// This method is the central part of the wave function collapse algorithm and is called repeatedly until no more
 /// cells can be collapsed.
-fn iterate(mut rng: &mut StdRng, grid: &mut ObjectGrid) -> IterationResult {
+fn iterate(rng: &mut StdRng, grid: &mut ObjectGrid) -> IterationResult {
   // Observation: Get the cells with the lowest entropy
   let lowest_entropy_cells = grid.get_cells_with_lowest_entropy();
   if lowest_entropy_cells.is_empty() {
@@ -83,9 +83,9 @@ fn iterate(mut rng: &mut StdRng, grid: &mut ObjectGrid) -> IterationResult {
   let index = rng.random_range(0..lowest_entropy_cells.len());
   let random_cell: &Cell = lowest_entropy_cells
     .get(index)
-    .expect(format!("Failed to get random cell during processing of object grid {}", grid.cg).as_str());
+    .unwrap_or_else(|| panic!("Failed to get random cell during processing of object grid {}", grid.cg));
   let mut random_cell_clone = random_cell.clone();
-  random_cell_clone.collapse(&mut rng);
+  random_cell_clone.collapse(rng);
 
   // Propagation: Update every neighbours' states and the grid
   let mut stack: Vec<Cell> = vec![random_cell_clone];
@@ -101,10 +101,11 @@ fn iterate(mut rng: &mut StdRng, grid: &mut ObjectGrid) -> IterationResult {
         } else {
           return IterationResult::Failure;
         }
-      } else {
-        if let Err(_) = neighbour.verify(&cell, &connection.opposite(), is_failure_log_level_increased) {
-          return IterationResult::Failure;
-        }
+      } else if neighbour
+        .verify(&cell, &connection.opposite(), is_failure_log_level_increased)
+        .is_err()
+      {
+        return IterationResult::Failure;
       }
     }
   }
@@ -132,7 +133,7 @@ fn handle_failure(
     increase_logging_or_short_circuit(&now, next_warning_time, grid, iter_count, iter_error_count, snapshots);
     log_failure(
       grid,
-      &snapshots,
+      snapshots,
       iter_count,
       iter_error_count,
       snapshot_index,
@@ -205,7 +206,7 @@ fn increase_logging_or_short_circuit(
 
 fn log_failure(
   grid: &mut ObjectGrid,
-  snapshots: &Vec<ObjectGrid>,
+  snapshots: &[ObjectGrid],
   iteration_count: &i32,
   iteration_error_count: &usize,
   snapshot_index: usize,

@@ -8,11 +8,11 @@ pub struct Variants {
 }
 
 impl Variants {
-  pub fn empty() -> Self {
+  pub const fn empty() -> Self {
     Self { variants: vec![] }
   }
 
-  pub fn new(variants: Vec<ObjectName>) -> Self {
+  pub const fn new(variants: Vec<ObjectName>) -> Self {
     Self { variants }
   }
 }
@@ -23,14 +23,14 @@ pub struct BuildingComponentRegistry {
 }
 
 impl BuildingComponentRegistry {
-  pub fn default() -> Self {
-    BuildingComponentRegistry {
+  pub const fn default() -> Self {
+    Self {
       variants: HashMap::new(),
     }
   }
 
   pub fn new_initialised() -> Self {
-    let mut registry = BuildingComponentRegistry::default();
+    let mut registry = Self::default();
 
     // Small house - Ground floor doors
     registry.insert_doors(
@@ -159,10 +159,10 @@ impl BuildingComponentRegistry {
     self
       .variants
       .insert((building_type, level, StructureType::Left), Variants::new(left));
-    if middle.is_some() {
+    if let Some(middle) = middle {
       self
         .variants
-        .insert((building_type, level, StructureType::Middle), Variants::new(middle.unwrap()));
+        .insert((building_type, level, StructureType::Middle), Variants::new(middle));
     }
     self
       .variants
@@ -180,11 +180,10 @@ impl BuildingComponentRegistry {
     self
       .variants
       .insert((building_type, level, StructureType::LeftDoor), Variants::new(left));
-    if middle.is_some() {
-      self.variants.insert(
-        (building_type, level, StructureType::MiddleDoor),
-        Variants::new(middle.unwrap()),
-      );
+    if let Some(middle) = middle {
+      self
+        .variants
+        .insert((building_type, level, StructureType::MiddleDoor), Variants::new(middle));
     }
     self
       .variants
@@ -240,7 +239,7 @@ mod tests {
     let initial_left = vec![ObjectName::HouseMediumWallLeft];
     let new_left = vec![ObjectName::HouseMediumDoorLeft1];
 
-    registry.insert_level(building_type, level, initial_left.clone(), None, vec![]);
+    registry.insert_level(building_type, level, initial_left, None, vec![]);
     registry.insert_level(building_type, level, new_left.clone(), None, vec![]);
 
     assert_eq!(
@@ -307,7 +306,7 @@ mod tests {
     let initial_left = vec![ObjectName::HouseMediumDoorLeft1];
     let new_left = vec![ObjectName::HouseMediumDoorLeft2];
 
-    registry.insert_doors(building_type, level, initial_left.clone(), None, vec![]);
+    registry.insert_doors(building_type, level, initial_left, None, vec![]);
     registry.insert_doors(building_type, level, new_left.clone(), None, vec![]);
 
     assert_eq!(

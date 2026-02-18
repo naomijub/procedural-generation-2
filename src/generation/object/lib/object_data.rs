@@ -29,8 +29,8 @@ impl ObjectData {
       );
     }
 
-    ObjectData {
-      tile_data: tile_data.clone(),
+    Self {
+      tile_data: *tile_data,
       sprite_index,
       is_large_sprite,
       name: Some(object_name),

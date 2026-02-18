@@ -36,7 +36,7 @@ impl ObjectGrid {
       .map(|y| (0..CHUNK_SIZE).map(|x| Cell::new(x, y)).collect())
       .collect();
 
-    ObjectGrid {
+    Self {
       cg,
       path_grid: None,
       path: HashSet::new(),
@@ -52,7 +52,7 @@ impl ObjectGrid {
     terrain_climate_state_map: &HashMap<(TerrainType, Climate), HashMap<TileType, Vec<TerrainState>>>,
     layered_plane: &LayeredPlane,
   ) -> Self {
-    let mut grid = ObjectGrid::default(cg);
+    let mut grid = Self::default(cg);
     let permitted_neighbours_of_empty = terrain_climate_state_map
       .get(&(TerrainType::Any, climate))
       .expect("Failed to find rule set for [Any] terrain type and [{:?}] climate combination")
@@ -84,22 +84,21 @@ impl ObjectGrid {
       if let Some(cell) = self.get_cell_mut(&ig) {
         let possible_states = terrain_climate_state_map
           .get(&(terrain, climate))
-          .expect(
-            format!(
+          .unwrap_or_else(|| {
+            panic!(
               "Failed to find rule set for [{:?}] terrain type and [{:?}] climate combination",
               &terrain, &climate
             )
-            .as_str(),
-          )
+          })
           .get(&tile_type)
-          .expect(format!("Failed to find rule set for [{:?}] tile type", &tile_type).as_str())
+          .unwrap_or_else(|| panic!("Failed to find rule set for [{:?}] tile type", &tile_type))
           .clone();
         let lower_tile_data = layered_plane
           .planes
           .iter()
-          .filter_map(|plane| {
-            let terrain_as_usize = tile.terrain as usize;
+          .inspect(|plane| {
             if is_monitored {
+              let terrain_as_usize = tile.terrain as usize;
               debug!(
                 "At {:?}, plane with layer [{}] is included: [{}] because [{}] is [{:?}]",
                 tile.coords,
@@ -109,14 +108,18 @@ impl ObjectGrid {
                 terrain_as_usize,
               );
             }
-            if let Some(plane_layer_as_usize) = plane.layer {
-              if plane_layer_as_usize < terrain_as_usize {
-                return Some(plane);
-              }
-            }
-            return None;
           })
-          .filter_map(|plane| plane.get_tile(ig).and_then(|t| Some((t.terrain, t.tile_type))))
+          .filter(|plane| {
+            let terrain_as_usize = tile.terrain as usize;
+            if let Some(plane_layer_as_usize) = plane.layer
+              && plane_layer_as_usize < terrain_as_usize
+            {
+              true
+            } else {
+              false
+            }
+          })
+          .filter_map(|plane| plane.get_tile(ig).map(|t| (t.terrain, t.tile_type)))
           .collect::<Vec<(TerrainType, TileType)>>();
         cell.initialise(terrain, tile_type, &possible_states, lower_tile_data.clone(), is_monitored);
         if is_monitored {
@@ -173,12 +176,12 @@ impl ObjectGrid {
           for (dx, dy) in [(0, 1), (-1, 0), (1, 0), (0, -1)] {
             let nx = ig.x + dx;
             let ny = ig.y + dy;
-            if nx >= 0 && ny >= 0 {
-              if let Some(row) = grid.get(ny as usize) {
-                if let Some(neighbour_ref) = row.get(nx as usize) {
-                  neighbours.push(neighbour_ref.clone());
-                }
-              }
+            if nx >= 0
+              && ny >= 0
+              && let Some(row) = grid.get(ny as usize)
+              && let Some(neighbour_ref) = row.get(nx as usize)
+            {
+              neighbours.push(neighbour_ref.clone());
             }
           }
 
@@ -226,7 +229,7 @@ impl ObjectGrid {
   }
 
   /// Returns a reference to the final path found by the pathfinding algorithm.
-  pub fn get_generated_path(&self) -> &HashSet<Point<InternalGrid>> {
+  pub const fn get_generated_path(&self) -> &HashSet<Point<InternalGrid>> {
     &self.path
   }
 
@@ -330,7 +333,7 @@ impl ObjectGrid {
     let points: Vec<(Connection, Point<InternalGrid>)> = get_connection_points(&cell.ig).into_iter().collect();
     let mut neighbours = vec![];
     for (connection, ig) in points {
-      if let Some(cell) = self.object_grid.iter().flatten().filter(|cell| cell.ig == ig).next() {
+      if let Some(cell) = self.object_grid.iter().flatten().find(|cell| cell.ig == ig) {
         neighbours.push((connection.opposite(), cell));
       } else {
         neighbours.push((connection.opposite(), &self.no_neighbours_tile));
@@ -391,11 +394,11 @@ impl ObjectGrid {
     self.object_grid = other.object_grid.clone();
   }
 
-  pub fn is_failure_log_level_increased(&self) -> bool {
+  pub const fn is_failure_log_level_increased(&self) -> bool {
     self.is_failure_log_level_increased
   }
 
-  pub fn increase_failure_log_level(&mut self) {
+  pub const fn increase_failure_log_level(&mut self) {
     self.is_failure_log_level_increased = true;
   }
 }
@@ -406,10 +409,10 @@ mod tests {
 
   impl ObjectGrid {
     pub fn default_walkable(cg: Point<ChunkGrid>) -> Self {
-      let mut grid = ObjectGrid::default(cg);
+      let mut grid = Self::default(cg);
       for row in &mut grid.object_grid {
         for cell in row {
-          cell.initialise(TerrainType::Land2, TileType::Fill, &vec![], vec![], false);
+          cell.initialise(TerrainType::Land2, TileType::Fill, &[], vec![], false);
         }
       }
 

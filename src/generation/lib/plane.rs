@@ -70,7 +70,7 @@ impl Plane {
   }
 }
 
-fn determine_tile_types(draft_tiles: &Vec<Vec<Option<DraftTile>>>) -> Vec<Vec<Option<Tile>>> {
+fn determine_tile_types(draft_tiles: &[Vec<Option<DraftTile>>]) -> Vec<Vec<Option<Tile>>> {
   let y_len = draft_tiles.len();
   let x_len = draft_tiles[0].len();
   let mut final_tiles = vec![vec![None; y_len]; x_len];
@@ -82,7 +82,7 @@ fn determine_tile_types(draft_tiles: &Vec<Vec<Option<DraftTile>>>) -> Vec<Vec<Op
           final_tiles[draft_tile.coords.internal_grid.x as usize][draft_tile.coords.internal_grid.y as usize] =
             Some(final_tile);
         } else {
-          let neighbour_tiles = get_neighbours(draft_tile, &draft_tiles);
+          let neighbour_tiles = get_neighbours(draft_tile, draft_tiles);
           let same_neighbours_count = neighbour_tiles.count_same();
           let tile_type = determine_tile_type(neighbour_tiles, same_neighbours_count);
           let final_tile = Tile::from(draft_tile.clone(), tile_type);
@@ -167,18 +167,18 @@ fn determine_tile_type<T: CoordType>(n: NeighbourTiles<T>, same_neighbours: usiz
     3 if n.all_direction_top_right_same() => TileType::InnerCornerTopRight,
     3 if n.all_direction_bottom_left_same() => TileType::InnerCornerBottomLeft,
     3 if n.all_direction_bottom_right_same() => TileType::InnerCornerBottomRight,
-    3 | 2 | 1 | 0 => TileType::Single,
+    0..=3 => TileType::Single,
     _ => TileType::Unknown,
   }
 }
 
-fn get_neighbours(of: &DraftTile, from: &Vec<Vec<Option<DraftTile>>>) -> NeighbourTiles<InternalGrid> {
+fn get_neighbours(of: &DraftTile, from: &[Vec<Option<DraftTile>>]) -> NeighbourTiles<InternalGrid> {
   let x = of.coords.internal_grid.x;
   let y = of.coords.internal_grid.y;
   let mut neighbours = NeighbourTiles::empty();
 
   for p in neighbour_points().iter() {
-    if let Some(neighbour) = get_draft_tile(x + p.0, y + p.1 * -1, from) {
+    if let Some(neighbour) = get_draft_tile(x + p.0, y - p.1, from) {
       let neighbour_tile = NeighbourTile::new(
         Point::new_internal_grid(p.0, p.1),
         neighbour.terrain,
@@ -198,7 +198,7 @@ fn neighbour_points() -> Vec<(i32, i32)> {
   vec![(-1, 1), (0, 1), (1, 1), (-1, 0), (1, 0), (-1, -1), (0, -1), (1, -1)]
 }
 
-fn get_draft_tile(x: i32, y: i32, from: &Vec<Vec<Option<DraftTile>>>) -> Option<&DraftTile> {
+fn get_draft_tile(x: i32, y: i32, from: &[Vec<Option<DraftTile>>]) -> Option<&DraftTile> {
   if x >= 0 && x < from[0].len() as i32 && y >= 0 && y < from.len() as i32 {
     from[x as usize][y as usize].as_ref()
   } else {

@@ -128,7 +128,7 @@ fn add_valid_connection_points(
   metadata: &Metadata,
   cg: &Point<ChunkGrid>,
 ) {
-  let mut connection_points = metadata.get_connection_points_for(&cg, object_grid);
+  let mut connection_points = metadata.get_connection_points_for(cg, object_grid);
   if connection_points.len() > 1 {
     connection_points = connection_points
       .iter_mut()
@@ -148,10 +148,11 @@ fn compute_available_space_map(object_grid: &mut ObjectGrid) -> HashSet<Point<In
   for y in 0..CHUNK_SIZE {
     for x in 0..CHUNK_SIZE {
       let ig = Point::new_internal_grid(x, y);
-      if let Some(cell) = object_grid.get_cell_mut(&ig) {
-        if !cell.is_collapsed() && cell.is_suitable_for_building_placement() {
-          available_space.insert(ig);
-        }
+      if let Some(cell) = object_grid.get_cell_mut(&ig)
+        && !cell.is_collapsed()
+        && cell.is_suitable_for_building_placement()
+      {
+        available_space.insert(ig);
       }
     }
   }

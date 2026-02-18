@@ -54,7 +54,7 @@ impl Metadata {
         let metadata = self
           .biome
           .get(point)
-          .expect(format!("Failed to get biome metadata for {} when retrieving data for {}", point, cg).as_str());
+          .unwrap_or_else(|| panic!("Failed to get biome metadata for {} when retrieving data for {}", point, cg));
         (*direction, metadata)
       })
       .collect();
@@ -81,10 +81,10 @@ impl Metadata {
     let mut connection_points = self
       .connection
       .get(cg)
-      .expect(format!("Failed to get connection points for {}", cg).as_str())
+      .unwrap_or_else(|| panic!("Failed to get connection points for {}", cg))
       .iter()
       .filter(|p| {
-        if let Some(cell) = object_grid.get_cell_mut(&p) {
+        if let Some(cell) = object_grid.get_cell_mut(p) {
           if cell.is_valid_connection_point() {
             // Uncomment below for debugging purposes
             // if let Some(tile_below) = &cell.tile_below {
@@ -119,10 +119,8 @@ impl Metadata {
       .cloned()
       .collect::<Vec<_>>();
 
-    if connection_points.len() == 1 {
-      if !connection_points[0].is_touching_edge() {
-        connection_points.clear();
-      }
+    if connection_points.len() == 1 && !connection_points[0].is_touching_edge() {
+      connection_points.clear();
     }
 
     connection_points
@@ -180,7 +178,7 @@ impl ElevationMetadata {
   fn calculate_x(&self, coordinate: f64) -> f64 {
     let min = self.x_range.start.min(self.x_range.end);
     let max = self.x_range.start.max(self.x_range.end);
-    (self.x_range.start + (coordinate * self.x_step) - self.x_step).clamp(min, max)
+    (coordinate.mul_add(self.x_step, self.x_range.start) - self.x_step).clamp(min, max)
   }
 
   /// Calculates the y-offset for a given y-coordinate value. The y-axis is inverted in this application, so we need to
@@ -188,7 +186,7 @@ impl ElevationMetadata {
   fn calculate_y(&self, coordinate: f64) -> f64 {
     let min = self.y_range.start.min(self.y_range.end);
     let max = self.y_range.start.max(self.y_range.end);
-    (self.y_range.end - (coordinate * self.y_step) + self.y_step).clamp(min, max)
+    (coordinate.mul_add(-self.y_step, self.y_range.end) + self.y_step).clamp(min, max)
   }
 }
 
@@ -200,7 +198,7 @@ pub struct BiomeMetadata {
 }
 
 impl BiomeMetadata {
-  pub fn new(cg: Point<ChunkGrid>, climate: Climate) -> Self {
+  pub const fn new(cg: Point<ChunkGrid>, climate: Climate) -> Self {
     Self { cg, climate }
   }
 }
@@ -246,7 +244,7 @@ impl Display for BiomeMetadataSet<'_> {
 }
 
 impl BiomeMetadataSet<'_> {
-  pub fn get(&self, direction: &Direction) -> &BiomeMetadata {
+  pub const fn get(&self, direction: &Direction) -> &BiomeMetadata {
     match direction {
       Direction::TopLeft => self.top_left,
       Direction::Top => self.top,
@@ -297,9 +295,9 @@ pub enum Climate {
 impl Climate {
   pub fn from(rainfall: f64) -> Self {
     match rainfall {
-      n if n < 0.33 => Climate::Dry,
-      n if n < 0.65 => Climate::Moderate,
-      _ => Climate::Humid,
+      n if n < 0.33 => Self::Dry,
+      n if n < 0.65 => Self::Moderate,
+      _ => Self::Humid,
     }
   }
 }
@@ -328,15 +326,11 @@ mod tests {
 
     // Given some random metadata
     for (direction, point) in get_direction_points(&cg) {
-      metadata
-        .biome
-        .insert(point.clone(), BiomeMetadata::new(point, Climate::Moderate));
+      metadata.biome.insert(point, BiomeMetadata::new(point, Climate::Moderate));
       if direction == Direction::Top {
-        metadata.biome.insert(point.clone(), BiomeMetadata::new(point, Climate::Dry));
+        metadata.biome.insert(point, BiomeMetadata::new(point, Climate::Dry));
       } else if direction == Direction::BottomLeft {
-        metadata
-          .biome
-          .insert(point.clone(), BiomeMetadata::new(point, Climate::Humid));
+        metadata.biome.insert(point, BiomeMetadata::new(point, Climate::Humid));
       }
     }
 
@@ -356,9 +350,7 @@ mod tests {
     let cg = Point::new_chunk_grid(0, 0);
 
     // Given incomplete metadata
-    metadata
-      .biome
-      .insert(cg.clone(), BiomeMetadata::new(cg.clone(), Climate::Moderate));
+    metadata.biome.insert(cg, BiomeMetadata::new(cg, Climate::Moderate));
 
     metadata.get_biome_metadata_for(&cg);
   }
@@ -377,7 +369,7 @@ mod tests {
     let cg = Point::new_chunk_grid(0, 0);
     let mut object_grid = ObjectGrid::default(cg);
     let mut metadata = Metadata::default(cg);
-    metadata.connection.insert(cg.clone(), vec![]);
+    metadata.connection.insert(cg, vec![]);
     let result = metadata.get_connection_points_for(&cg, &mut object_grid);
     assert!(result.is_empty());
   }
@@ -390,7 +382,7 @@ mod tests {
       cell.calculate_is_walkable(); // Point (1, 1) is not walkable
     }
     let mut metadata = Metadata::default(cg);
-    metadata.connection.insert(cg.clone(), vec![Point::new_internal_grid(1, 1)]);
+    metadata.connection.insert(cg, vec![Point::new_internal_grid(1, 1)]);
     let result = metadata.get_connection_points_for(&cg, &mut object_grid);
     assert_eq!(result, vec![]);
   }
@@ -402,7 +394,7 @@ mod tests {
     let mut metadata = Metadata::default(cg);
     let expected_point1 = Point::new_internal_grid(1, 1);
     let expected_point2 = Point::new_internal_grid(1, 2);
-    metadata.connection.insert(cg.clone(), vec![expected_point1, expected_point2]);
+    metadata.connection.insert(cg, vec![expected_point1, expected_point2]);
     let result = metadata.get_connection_points_for(&cg, &mut object_grid);
     assert_eq!(result, vec![expected_point1, expected_point2]);
   }

@@ -11,7 +11,7 @@ impl Plugin for PostProcessorPlugin {
   fn build(&self, _app: &mut App) {}
 }
 
-pub(crate) fn process(mut chunk: Chunk, settings: &Settings) -> Chunk {
+pub fn process(mut chunk: Chunk, settings: &Settings) -> Chunk {
   let start_time = shared::get_time();
   for layer in (1..TerrainType::length()).rev() {
     let layer_name = TerrainType::from(layer);
@@ -44,20 +44,20 @@ fn clear_single_tiles_from_chunk_with_no_fill_below(layer: usize, chunk: &mut Ch
       .iter_mut()
       .flatten()
       .filter_map(|tile| {
-        if let Some(tile) = tile {
-          if tile.tile_type == TileType::Single {
-            if let Some(tile_below) = plane_below.get_tile(tile.coords.internal_grid) {
-              if tile_below.tile_type != TileType::Fill {
-                return Some((tile.coords.internal_grid, Some(tile_below.tile_type)));
-              }
-            } else if tile.terrain != TerrainType::Shore {
-              // TODO: Find out if the below still happens and why - it's not a problem in practice though
-              warn!(
-                "Removed [{:?}] [{:?}] tile {:?} {:?} because it did not exist on the layer below",
-                tile.terrain, tile.tile_type, tile.coords.tile_grid, tile.coords.internal_grid
-              );
-              return Some((tile.coords.internal_grid, None));
+        if let Some(tile) = tile
+          && tile.tile_type == TileType::Single
+        {
+          if let Some(tile_below) = plane_below.get_tile(tile.coords.internal_grid) {
+            if tile_below.tile_type != TileType::Fill {
+              return Some((tile.coords.internal_grid, Some(tile_below.tile_type)));
             }
+          } else if tile.terrain != TerrainType::Shore {
+            // TODO: Find out if the below still happens and why - it's not a problem in practice though
+            warn!(
+              "Removed [{:?}] [{:?}] tile {:?} {:?} because it did not exist on the layer below",
+              tile.terrain, tile.tile_type, tile.coords.tile_grid, tile.coords.internal_grid
+            );
+            return Some((tile.coords.internal_grid, None));
           }
         }
         None
@@ -70,11 +70,12 @@ fn clear_single_tiles_from_chunk_with_no_fill_below(layer: usize, chunk: &mut Ch
   }
 
   for (ig, _) in &tiles_to_clear {
-    let (tile_type, terrain) = if let Some(tile) = chunk.layered_plane.get_tile_from_highest_layer(ig) {
-      (tile.tile_type, tile.terrain)
-    } else {
-      panic!("Tile below tile {} on chunk {} was missing", ig, cg);
-    };
+    let (tile_type, terrain) = chunk.layered_plane.get_tile_from_highest_layer(ig).map_or_else(
+      || {
+        panic!("Tile below tile {} on chunk {} was missing", ig, cg);
+      },
+      |tile| (tile.tile_type, tile.terrain),
+    );
     if let Some(tile) = chunk.layered_plane.flat.get_tile_mut(ig) {
       tile.update_to(tile_type, terrain);
     }

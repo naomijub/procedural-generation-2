@@ -54,7 +54,7 @@ impl BuildingLevel {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct BuildingTemplate {
+pub struct BuildingTemplate {
   pub(crate) name: String,
   building_type: BuildingType,
   pub(crate) width: i32,
@@ -179,7 +179,7 @@ impl BuildingTemplate {
   }
 }
 
-pub(crate) fn get_building_templates() -> Vec<BuildingTemplate> {
+pub fn get_building_templates() -> Vec<BuildingTemplate> {
   vec![
     BuildingTemplate::new(
       "Small House Facing East",

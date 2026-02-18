@@ -5,12 +5,12 @@ use bevy::log::*;
 pub struct TileBelow {
   pub(crate) terrain: TerrainType,
   pub(crate) tile_type: TileType,
-  pub(crate) below: Option<Box<TileBelow>>,
+  pub(crate) below: Option<Box<Self>>,
 }
 
 impl Default for TileBelow {
   fn default() -> Self {
-    TileBelow {
+    Self {
       terrain: TerrainType::Any,
       tile_type: TileType::Unknown,
       below: None,
@@ -26,7 +26,7 @@ impl TileBelow {
     }
     let mut iter = data.into_iter();
     if let Some((terrain, tile_type)) = iter.next() {
-      TileBelow {
+      Self {
         terrain,
         tile_type,
         below: {
@@ -34,12 +34,12 @@ impl TileBelow {
           if rest.is_empty() {
             None
           } else {
-            Some(Box::new(TileBelow::new(rest)))
+            Some(Box::new(Self::new(rest)))
           }
         },
       }
     } else {
-      TileBelow::default()
+      Self::default()
     }
   }
 
@@ -65,8 +65,8 @@ mod tests {
   use super::*;
 
   impl TileBelow {
-    pub fn from(terrain: TerrainType, tile_type: TileType, below: Option<Box<TileBelow>>) -> Self {
-      TileBelow {
+    pub fn from(terrain: TerrainType, tile_type: TileType, below: Option<Box<Self>>) -> Self {
+      Self {
         terrain,
         tile_type,
         below,

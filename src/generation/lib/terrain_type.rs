@@ -3,20 +3,15 @@ use std::fmt;
 use std::fmt::{Display, Formatter};
 use strum::EnumIter;
 
-#[derive(serde::Deserialize, Debug, Clone, Copy, Eq, PartialEq, PartialOrd, Ord, Hash, Reflect, EnumIter)]
+#[derive(serde::Deserialize, Debug, Clone, Copy, Eq, PartialEq, PartialOrd, Ord, Hash, Reflect, EnumIter, Default)]
 pub enum TerrainType {
   Water,
   Shore,
   Land1,
   Land2,
   Land3,
+  #[default]
   Any,
-}
-
-impl Default for TerrainType {
-  fn default() -> Self {
-    TerrainType::Any
-  }
 }
 
 impl Display for TerrainType {
@@ -27,29 +22,29 @@ impl Display for TerrainType {
 
 impl TerrainType {
   /// The number of variants in the [`TerrainType`] enum excluding `Any`.
-  pub fn length() -> usize {
+  pub const fn length() -> usize {
     5
   }
 
-  pub fn from(i: usize) -> Self {
+  pub const fn from(i: usize) -> Self {
     match i {
-      0 => TerrainType::Water,
-      1 => TerrainType::Shore,
-      2 => TerrainType::Land1,
-      3 => TerrainType::Land2,
-      4 => TerrainType::Land3,
-      _ => TerrainType::Any,
+      0 => Self::Water,
+      1 => Self::Shore,
+      2 => Self::Land1,
+      3 => Self::Land2,
+      4 => Self::Land3,
+      _ => Self::Any,
     }
   }
 
-  pub fn new(proposed: TerrainType, is_biome_edge: bool) -> Self {
+  pub const fn new(proposed: Self, is_biome_edge: bool) -> Self {
     let max_layer: i32 = if is_biome_edge {
-      TerrainType::Shore as i32
+      Self::Shore as i32
     } else {
-      TerrainType::length() as i32
+      Self::length() as i32
     };
     if proposed as i32 > max_layer {
-      TerrainType::from(max_layer as usize)
+      Self::from(max_layer as usize)
     } else {
       proposed
     }

@@ -24,26 +24,26 @@ impl Direction {
     let (x_cmp, y_cmp) = (a.x.cmp(&b.x), a.y.cmp(&b.y));
     match TypeId::of::<T>() {
       id if id == TypeId::of::<InternalGrid>() => match (x_cmp, y_cmp) {
-        (Ordering::Less, Ordering::Less) => Direction::BottomRight,
-        (Ordering::Less, Ordering::Equal) => Direction::Right,
-        (Ordering::Less, Ordering::Greater) => Direction::TopRight,
-        (Ordering::Equal, Ordering::Less) => Direction::Bottom,
-        (Ordering::Equal, Ordering::Equal) => Direction::Center,
-        (Ordering::Equal, Ordering::Greater) => Direction::Top,
-        (Ordering::Greater, Ordering::Less) => Direction::BottomLeft,
-        (Ordering::Greater, Ordering::Equal) => Direction::Left,
-        (Ordering::Greater, Ordering::Greater) => Direction::TopLeft,
+        (Ordering::Less, Ordering::Less) => Self::BottomRight,
+        (Ordering::Less, Ordering::Equal) => Self::Right,
+        (Ordering::Less, Ordering::Greater) => Self::TopRight,
+        (Ordering::Equal, Ordering::Less) => Self::Bottom,
+        (Ordering::Equal, Ordering::Equal) => Self::Center,
+        (Ordering::Equal, Ordering::Greater) => Self::Top,
+        (Ordering::Greater, Ordering::Less) => Self::BottomLeft,
+        (Ordering::Greater, Ordering::Equal) => Self::Left,
+        (Ordering::Greater, Ordering::Greater) => Self::TopLeft,
       },
       _ => match (x_cmp, y_cmp) {
-        (Ordering::Less, Ordering::Less) => Direction::TopRight,
-        (Ordering::Less, Ordering::Equal) => Direction::Right,
-        (Ordering::Less, Ordering::Greater) => Direction::BottomRight,
-        (Ordering::Equal, Ordering::Less) => Direction::Top,
-        (Ordering::Equal, Ordering::Equal) => Direction::Center,
-        (Ordering::Equal, Ordering::Greater) => Direction::Bottom,
-        (Ordering::Greater, Ordering::Less) => Direction::TopLeft,
-        (Ordering::Greater, Ordering::Equal) => Direction::Left,
-        (Ordering::Greater, Ordering::Greater) => Direction::BottomLeft,
+        (Ordering::Less, Ordering::Less) => Self::TopRight,
+        (Ordering::Less, Ordering::Equal) => Self::Right,
+        (Ordering::Less, Ordering::Greater) => Self::BottomRight,
+        (Ordering::Equal, Ordering::Less) => Self::Top,
+        (Ordering::Equal, Ordering::Equal) => Self::Center,
+        (Ordering::Equal, Ordering::Greater) => Self::Bottom,
+        (Ordering::Greater, Ordering::Less) => Self::TopLeft,
+        (Ordering::Greater, Ordering::Equal) => Self::Left,
+        (Ordering::Greater, Ordering::Greater) => Self::BottomLeft,
       },
     }
   }
@@ -67,37 +67,37 @@ impl Direction {
     to_direction(other_world, chunk_left, chunk_right, chunk_top, chunk_bottom)
   }
 
-  pub fn to_opposite(self) -> Self {
+  pub const fn to_opposite(self) -> Self {
     match self {
-      Direction::TopLeft => Direction::BottomRight,
-      Direction::Top => Direction::Bottom,
-      Direction::TopRight => Direction::BottomLeft,
-      Direction::Left => Direction::Right,
-      Direction::Center => Direction::Center,
-      Direction::Right => Direction::Left,
-      Direction::BottomLeft => Direction::TopRight,
-      Direction::Bottom => Direction::Top,
-      Direction::BottomRight => Direction::TopLeft,
+      Self::TopLeft => Self::BottomRight,
+      Self::Top => Self::Bottom,
+      Self::TopRight => Self::BottomLeft,
+      Self::Left => Self::Right,
+      Self::Center => Self::Center,
+      Self::Right => Self::Left,
+      Self::BottomLeft => Self::TopRight,
+      Self::Bottom => Self::Top,
+      Self::BottomRight => Self::TopLeft,
     }
   }
 
-  pub fn to_point<T: CoordType + 'static>(&self) -> Point<T> {
+  pub fn to_point<T: CoordType + 'static>(self) -> Point<T> {
     match (TypeId::of::<T>(), self) {
-      (id, Direction::TopLeft) if id == TypeId::of::<InternalGrid>() => Point::new(-1, -1),
-      (_, Direction::TopLeft) => Point::new(-1, 1),
-      (id, Direction::Top) if id == TypeId::of::<InternalGrid>() => Point::new(0, -1),
-      (_, Direction::Top) => Point::new(0, 1),
-      (id, Direction::TopRight) if id == TypeId::of::<InternalGrid>() => Point::new(1, -1),
-      (_, Direction::TopRight) => Point::new(1, 1),
-      (_, Direction::Left) => Point::new(-1, 0),
-      (_, Direction::Center) => Point::new(0, 0),
-      (_, Direction::Right) => Point::new(1, 0),
-      (id, Direction::BottomLeft) if id == TypeId::of::<InternalGrid>() => Point::new(-1, 1),
-      (_, Direction::BottomLeft) => Point::new(-1, -1),
-      (id, Direction::Bottom) if id == TypeId::of::<InternalGrid>() => Point::new(0, 1),
-      (_, Direction::Bottom) => Point::new(0, -1),
-      (id, Direction::BottomRight) if id == TypeId::of::<InternalGrid>() => Point::new(1, 1),
-      (_, Direction::BottomRight) => Point::new(1, -1),
+      (id, Self::TopLeft) if id == TypeId::of::<InternalGrid>() => Point::new(-1, -1),
+      (_, Self::TopLeft) => Point::new(-1, 1),
+      (id, Self::Top) if id == TypeId::of::<InternalGrid>() => Point::new(0, -1),
+      (_, Self::Top) => Point::new(0, 1),
+      (id, Self::TopRight) if id == TypeId::of::<InternalGrid>() => Point::new(1, -1),
+      (_, Self::TopRight) => Point::new(1, 1),
+      (_, Self::Left) => Point::new(-1, 0),
+      (_, Self::Center) => Point::new(0, 0),
+      (_, Self::Right) => Point::new(1, 0),
+      (id, Self::BottomLeft) if id == TypeId::of::<InternalGrid>() => Point::new(-1, 1),
+      (_, Self::BottomLeft) => Point::new(-1, -1),
+      (id, Self::Bottom) if id == TypeId::of::<InternalGrid>() => Point::new(0, 1),
+      (_, Self::Bottom) => Point::new(0, -1),
+      (id, Self::BottomRight) if id == TypeId::of::<InternalGrid>() => Point::new(1, 1),
+      (_, Self::BottomRight) => Point::new(1, -1),
     }
   }
 }
@@ -292,7 +292,7 @@ mod tests {
   fn from_chunk_w_returns_correct_direction_for_adjacent_negative_chunk_w() {
     let distance = CHUNK_SIZE * TILE_SIZE as i32;
     let chunk_world = Point::new_world(0, 0);
-    let other_world = Point::new_world(-1 * distance, -1 * distance);
+    let other_world = Point::new_world(-distance, -1 * -distance);
     assert_eq!(Direction::from_chunk_w(&chunk_world, &other_world), Direction::BottomLeft);
   }
 

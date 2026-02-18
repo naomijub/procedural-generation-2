@@ -155,7 +155,7 @@ pub const WINDOW_WIDTH: u32 = 1280;
 pub const WINDOW_HEIGHT: u32 = 720;
 // ------------------------------------------------------------------------------------------------------
 // Miscellaneous
-pub const CELL_LOCK_ERROR: &'static str = "Failed to lock cell";
+pub const CELL_LOCK_ERROR: &str = "Failed to lock cell";
 /// The number of successful iterations that have to be performed in the wave function collapse algorithm before taking
 /// a snapshot.
 pub const WAVE_FUNCTION_COLLAPSE_SNAPSHOT_INTERVAL: i32 = 10;

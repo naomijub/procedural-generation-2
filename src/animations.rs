@@ -83,32 +83,32 @@ fn update_mesh_uvs(
   anim_mesh_component: Mut<AnimationMeshComponent>,
   mesh: &mut Mesh,
 ) {
-  if let Some(uv_attribute) = mesh.attribute_mut(Mesh::ATTRIBUTE_UV_0) {
-    if let VertexAttributeValues::Float32x2(uvs) = uv_attribute {
-      let mut tile_index = 0;
-      for i in 0..uvs.len() / 4 {
-        let base_sprite_index = anim_mesh_component.tile_indices[tile_index];
-        let frame_offset = animation_state.current_frame as usize;
-        let sprite_index = base_sprite_index + frame_offset;
-        let sprite_col = sprite_index as f32 % anim_mesh_component.columns;
-        let sprite_row = (sprite_index as f32 / anim_mesh_component.columns).floor();
+  if let Some(uv_attribute) = mesh.attribute_mut(Mesh::ATTRIBUTE_UV_0)
+    && let VertexAttributeValues::Float32x2(uvs) = uv_attribute
+  {
+    let mut tile_index = 0;
+    for i in 0..uvs.len() / 4 {
+      let base_sprite_index = anim_mesh_component.tile_indices[tile_index];
+      let frame_offset = animation_state.current_frame as usize;
+      let sprite_index = base_sprite_index + frame_offset;
+      let sprite_col = sprite_index as f32 % anim_mesh_component.columns;
+      let sprite_row = (sprite_index as f32 / anim_mesh_component.columns).floor();
 
-        let u_start = sprite_col / anim_mesh_component.columns;
-        let u_end = (sprite_col + 1.0) / anim_mesh_component.columns;
-        let v_start = sprite_row / anim_mesh_component.rows;
-        let v_end = (sprite_row + 1.0) / anim_mesh_component.rows;
+      let u_start = sprite_col / anim_mesh_component.columns;
+      let u_end = (sprite_col + 1.0) / anim_mesh_component.columns;
+      let v_start = sprite_row / anim_mesh_component.rows;
+      let v_end = (sprite_row + 1.0) / anim_mesh_component.rows;
 
-        let vertex_base = i * 4;
-        uvs[vertex_base] = [u_start, v_start]; // Top-left
-        uvs[vertex_base + 1] = [u_end, v_start]; // Top-right
-        uvs[vertex_base + 2] = [u_end, v_end]; // Bottom-right
-        uvs[vertex_base + 3] = [u_start, v_end]; // Bottom-left
+      let vertex_base = i * 4;
+      uvs[vertex_base] = [u_start, v_start]; // Top-left
+      uvs[vertex_base + 1] = [u_end, v_start]; // Top-right
+      uvs[vertex_base + 2] = [u_end, v_end]; // Bottom-right
+      uvs[vertex_base + 3] = [u_start, v_end]; // Bottom-left
 
-        tile_index += 1;
+      tile_index += 1;
 
-        if tile_index >= anim_mesh_component.tile_indices.len() {
-          break;
-        }
+      if tile_index >= anim_mesh_component.tile_indices.len() {
+        break;
       }
     }
   }

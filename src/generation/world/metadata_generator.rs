@@ -88,8 +88,8 @@ fn regenerate_metadata(mut metadata: ResMut<Metadata>, cg: Point<ChunkGrid>, set
       let cg = Point::new_chunk_grid(x, y);
       generate_elevation_metadata(&mut metadata, x, y, &metadata_settings);
       generate_biome_metadata(&mut metadata, &biome_perlin, cg);
-      generate_connection_points(&mut metadata, &settings, cg);
-      generate_settlement_metadata(&mut metadata, &settings, &settlement_perlin, cg);
+      generate_connection_points(&mut metadata, settings, cg);
+      generate_settlement_metadata(&mut metadata, settings, &settlement_perlin, cg);
       metadata.index.push(cg);
     })
   });
@@ -132,9 +132,9 @@ fn calculate_range_and_step_size(
   let normalised_mod = (modulo(coordinate as f64, frequency)) / frequency;
   let is_rising = normalised_mod <= 0.5;
   let base = if is_rising {
-    2.0 * normalised_mod - offset
+    2.0f64.mul_add(normalised_mod, -offset)
   } else {
-    (2.0 * (1.0 - normalised_mod)) - chunk_step_size - offset
+    2.0f64.mul_add(1.0 - normalised_mod, -chunk_step_size) - offset
   };
   let start = ((base * 10000.).round()) / 10000.;
   let mut end = (((base + chunk_step_size) * 10000.).round()) / 10000.;
@@ -174,8 +174,8 @@ fn generate_connection_points(metadata: &mut ResMut<Metadata>, settings: &Settin
 
 fn calculate_connection_points_for_cg(settings: &Settings, cg: &Point<ChunkGrid>) -> Vec<Point<InternalGrid>> {
   let mut connection_points = Vec::new();
-  for (direction, neighbour_cg) in get_cardinal_direction_points(&cg) {
-    let hash = generate_hash(&cg, &neighbour_cg);
+  for (direction, neighbour_cg) in get_cardinal_direction_points(cg) {
+    let hash = generate_hash(cg, &neighbour_cg);
     let mut rng = StdRng::seed_from_u64(hash);
     let num_points = match rng.random_range(0..100) {
       0..=40 => 0,
@@ -249,7 +249,7 @@ fn generate_settlement_metadata(
 ) {
   let noise_value = (perlin.get([cg.x as f64, cg.y as f64]) + 1.) / 2.;
   let settlement_threshold = settings.metadata.settlement_probability;
-  let is_settled = if noise_value >= settlement_threshold { false } else { true };
+  let is_settled = noise_value < settlement_threshold;
   trace!(
     "Generated settled status [{:?}] for {} because noise value is [{:.2}] at a threshold of [{:.2}]",
     is_settled, cg, noise_value, settlement_threshold
@@ -305,7 +305,7 @@ mod tests {
 
   fn calculate_connection_points_generates_matching_pairs(cg: Point<ChunkGrid>) {
     // Generate connection points for requested point
-    let settings = Settings { ..Default::default() };
+    let settings = Settings::default();
     let mut connection_points_map = std::collections::HashMap::new();
     let connection_points = calculate_connection_points_for_cg(&settings, &cg);
     connection_points_map.insert(cg, connection_points);

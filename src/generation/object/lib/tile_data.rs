@@ -10,7 +10,7 @@ pub struct TileData {
 }
 
 impl TileData {
-  pub fn new(parent_entity: Entity, tile: Tile) -> Self {
+  pub const fn new(parent_entity: Entity, tile: Tile) -> Self {
     Self {
       chunk_entity: parent_entity,
       flat_tile: tile,

@@ -27,9 +27,9 @@ pub fn generate_chunks(spawn_points: Vec<Point<World>>, metadata: Metadata, sett
   let start_time = shared::get_time();
   let mut chunks: Vec<Chunk> = Vec::new();
   for chunk_w in spawn_points {
-    let chunk_tg = Point::new_tile_grid_from_world(chunk_w.clone());
-    let mut chunk = Chunk::new(chunk_w.clone(), chunk_tg, &metadata, &settings);
-    chunk = post_processor::process(chunk, &settings);
+    let chunk_tg = Point::new_tile_grid_from_world(chunk_w);
+    let mut chunk = Chunk::new(chunk_w, chunk_tg, &metadata, settings);
+    chunk = post_processor::process(chunk, settings);
     chunks.push(chunk);
   }
   debug!(
@@ -54,7 +54,7 @@ pub fn spawn_chunk(world_child_builder: &mut RelatedSpawnerCommands<ChildOf>, ch
       Visibility::default(),
       ChunkComponent {
         layered_plane: chunk.layered_plane.clone(),
-        coords: chunk.coords.clone(),
+        coords: chunk.coords,
       },
     ))
     .id()
@@ -166,7 +166,7 @@ fn spawn_tile_mesh(
   let tiles_cloned = tiles.clone();
   let cg = tiles[0].coords.chunk_grid;
   let (vertices, indices, uvs, tile_sprite_indices, sprite_sheet_columns, sprite_sheet_rows) = calculate_mesh_attributes(
-    &resources,
+    resources,
     tiles,
     layer,
     has_animated_sprites,
@@ -254,7 +254,7 @@ fn calculate_mesh_attributes(
 /// Determines the number of columns in the sprite sheet based on whether terrain sprites are disabled
 /// and whether the asset collection contains animated sprites. The latter can only be true if terrain sprites
 /// are enabled.
-fn resolve_columns(has_animated_sprites: bool, is_drawing_terrain_sprites_disabled: bool) -> f32 {
+const fn resolve_columns(has_animated_sprites: bool, is_drawing_terrain_sprites_disabled: bool) -> f32 {
   match (is_drawing_terrain_sprites_disabled, has_animated_sprites) {
     (true, _) => PLACEHOLDER_TILE_SET_COLUMNS as f32,
     (false, true) => ANIMATED_TILE_SET_COLUMNS as f32,
@@ -263,7 +263,7 @@ fn resolve_columns(has_animated_sprites: bool, is_drawing_terrain_sprites_disabl
 }
 
 /// Determines the number of rows in the sprite sheet based on whether terrain sprites are disabled.
-fn resolve_rows(is_drawing_terrain_sprites_disabled: bool) -> f32 {
+const fn resolve_rows(is_drawing_terrain_sprites_disabled: bool) -> f32 {
   if is_drawing_terrain_sprites_disabled {
     PLACEHOLDER_TILE_SET_ROWS as f32
   } else {
@@ -283,7 +283,5 @@ fn resolve_sprite_index(
     return tile.terrain as usize;
   }
 
-  tile
-    .tile_type
-    .calculate_sprite_index(&tile.terrain, &tile.climate, &resources)
+  tile.tile_type.calculate_sprite_index(&tile.terrain, &tile.climate, resources)
 }

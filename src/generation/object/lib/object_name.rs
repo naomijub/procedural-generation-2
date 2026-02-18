@@ -156,7 +156,7 @@ pub enum ObjectName {
 }
 
 impl ObjectName {
-  pub fn is_multi_tile(&self) -> bool {
+  pub const fn is_multi_tile(&self) -> bool {
     matches!(
       self,
       ObjectName::Land3Tree1
@@ -167,7 +167,7 @@ impl ObjectName {
     )
   }
 
-  pub fn is_animated(&self) -> bool {
+  pub const fn is_animated(&self) -> bool {
     matches!(
       self,
       ObjectName::SwampInnerCornerBottomRight
@@ -287,7 +287,7 @@ impl ObjectName {
     }
   }
 
-  fn get_index(&self) -> i32 {
+  const fn get_index(&self) -> i32 {
     match self {
       ObjectName::PathRight => 32,
       ObjectName::PathHorizontal => 33,
