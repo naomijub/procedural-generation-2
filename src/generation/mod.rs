@@ -328,7 +328,7 @@ fn stage_3_spawn_chunks(
   commands: &mut Commands,
   world_entity: Entity,
   existing_chunks: &Res<ChunkComponentIndex>,
-  mut chunks: Vec<Chunk>,
+  chunks: Vec<Chunk>,
   cg: &Point<ChunkGrid>,
 ) -> GenerationStage {
   if !chunks.is_empty() {
@@ -359,7 +359,7 @@ fn stage_4_spawn_tile_meshes(
   commands: &mut Commands,
   settings: &Res<Settings>,
   resources: &GenerationResourcesCollection,
-  mut chunk_entity_pairs: Vec<(Chunk, Entity)>,
+  chunk_entity_pairs: Vec<(Chunk, Entity)>,
   meshes: &mut ResMut<Assets<Mesh>>,
   materials: &mut ResMut<Assets<ColorMaterial>>,
   cg: &Point<ChunkGrid>,
@@ -470,7 +470,7 @@ fn stage_7_schedule_generating_object_data(
 ) -> GenerationStage {
   if path_generation_task.is_finished() {
     let mut object_generation_tasks = Vec::new();
-    return if let Some(mut triplets) = block_on(poll_once(path_generation_task)) {
+    return if let Some(triplets) = block_on(poll_once(path_generation_task)) {
       for (chunk, chunk_entity, mut object_grid) in triplets.into_iter() {
         if commands.get_entity(chunk_entity).is_ok() {
           let settings = *settings;
