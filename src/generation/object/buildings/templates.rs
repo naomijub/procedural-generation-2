@@ -5,7 +5,7 @@ use crate::generation::lib::Direction;
 use crate::generation::object::buildings::registry::BuildingComponentRegistry;
 use crate::generation::object::lib::ObjectName;
 use bevy::platform::collections::HashSet;
-use rand::Rng;
+use rand::RngExt;
 use rand::prelude::StdRng;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

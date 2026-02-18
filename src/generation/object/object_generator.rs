@@ -13,7 +13,7 @@ use bevy::prelude::{Commands, Component, Entity, Name, Query, TextureAtlas, Tran
 use bevy::sprite::{Anchor, Sprite};
 use bevy::tasks;
 use bevy::tasks::{AsyncComputeTaskPool, Task, block_on};
-use rand::Rng;
+use rand::RngExt;
 use rand::prelude::StdRng;
 
 pub struct ObjectGeneratorPlugin;

@@ -11,7 +11,7 @@ use crate::resources::Settings;
 use bevy::app::{App, Plugin};
 use bevy::log::*;
 use bevy::platform::collections::HashSet;
-use rand::Rng;
+use rand::RngExt;
 use rand::prelude::StdRng;
 
 /// Contains the main logic for generation of buildings in the world. This happens after path generation and prior to

@@ -7,7 +7,7 @@ use crate::generation::object::lib::tile_below::TileBelow;
 use crate::generation::object::lib::{Connection, ObjectName};
 use bevy::log::*;
 use bevy::prelude::Reflect;
-use rand::Rng;
+use rand::RngExt;
 use rand::prelude::StdRng;
 use std::fmt::{Display, Formatter};
 use std::sync::{Arc, Mutex};

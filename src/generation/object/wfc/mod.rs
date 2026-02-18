@@ -4,7 +4,7 @@ use crate::generation::object::lib::{Cell, IterationResult, ObjectGrid};
 use crate::resources::Settings;
 use bevy::app::{App, Plugin};
 use bevy::log::*;
-use rand::Rng;
+use rand::RngExt;
 use rand::prelude::StdRng;
 
 /// Contains the main logic for the wave function collapse algorithm used to determine decorative objects in the grid.

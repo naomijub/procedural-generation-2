@@ -8,7 +8,7 @@ use crate::resources::Settings;
 use bevy::app::{App, Plugin};
 use bevy::log::*;
 use bevy::platform::collections::HashSet;
-use rand::Rng;
+use rand::RngExt;
 use rand::prelude::StdRng;
 use std::collections::HashMap;
 use std::sync::Arc;

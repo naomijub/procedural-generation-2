@@ -24,6 +24,7 @@ use bevy::audio::{AudioPlugin, SpatialScale};
 use bevy::input::common_conditions::input_toggle_active;
 use bevy::prelude::*;
 use bevy::window::{PresentMode, WindowResolution};
+use bevy_framepace::FramepacePlugin;
 // use bevy_framepace::FramepacePlugin; // TODO: Add back in once available on https://crates.io/crates/bevy_framepace
 use bevy_inspector_egui::DefaultInspectorConfigPlugin;
 use bevy_inspector_egui::bevy_egui::EguiPlugin;
@@ -55,7 +56,7 @@ fn main() {
         })
         .build(),
     )
-    // .add_plugins(FramepacePlugin)
+    .add_plugins(FramepacePlugin)
     .add_plugins((
       CameraPlugin,
       AppStatePlugin,

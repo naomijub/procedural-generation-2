@@ -8,7 +8,7 @@ use crate::resources::Settings;
 use bevy::log::*;
 use noise::{BasicMulti, MultiFractal, NoiseFn, Perlin};
 use rand::rngs::StdRng;
-use rand::{Rng, SeedableRng};
+use rand::{RngExt, SeedableRng};
 
 const INSIDE: i32 = 1;
 const OUTSIDE: i32 = CHUNK_SIZE + 1;

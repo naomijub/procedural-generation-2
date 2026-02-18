@@ -11,7 +11,7 @@ use bevy::log::*;
 use bevy::prelude::{MessageReader, MessageWriter, NextState, OnEnter, Res, ResMut};
 use noise::{BasicMulti, MultiFractal, NoiseFn, Perlin};
 use rand::prelude::StdRng;
-use rand::{Rng, SeedableRng};
+use rand::{RngExt, SeedableRng};
 use std::hash::Hasher;
 use std::hash::{DefaultHasher, Hash};
 use std::ops::Range;
